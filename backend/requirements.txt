@@ -1,0 +1,9 @@
+Pillow==12.0.0
+asgiref==3.8.1
+django==3.2.25
+django-cors-headers==4.3.1
+djangorestframework==3.14.0
+openai==1.57.4
+python-dotenv==1.0.0
+PyPDF2==3.0.1
+python-docx==1.1.0
