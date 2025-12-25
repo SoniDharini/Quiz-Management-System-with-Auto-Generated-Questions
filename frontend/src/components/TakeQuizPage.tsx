@@ -641,7 +641,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
 
   const handlePreviousQuestion = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 
@@ -649,7 +649,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
     if (!loadedQuiz || !attemptId) return;
     const answers = Object.keys(selectedAnswers).map(questionIndex => ({
       question_id: quizQuestions[parseInt(questionIndex)].id,
-      selected_option_index: selectedAnswers[parseInt(questionIndex)]
+      selected_option: selectedAnswers[parseInt(questionIndex)]
     }));
 
     try {

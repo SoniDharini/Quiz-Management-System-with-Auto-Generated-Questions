@@ -258,12 +258,12 @@ export const quizAPI = {
   },
 
   // Submit quiz answers
-  submitQuiz: async (quizId: number, answers: { question_id: number; selected_option: number }[], timeTaken?: number) => {
+  submitQuiz: async (attemptId: number, answers: { question_id: number; selected_option: number }[], timeTaken?: number) => {
     const response = await fetch(`${API_BASE_URL}/quiz/submit/`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ 
-        quiz_id: quizId, 
+        attempt_id: attemptId, 
         answers,
         time_taken: timeTaken
       })

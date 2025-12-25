@@ -205,7 +205,7 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
 
 class QuizSubmitSerializer(serializers.Serializer):
     """Serializer for quiz submission"""
-    quiz_id = serializers.IntegerField()
+    attempt_id = serializers.IntegerField()
     answers = AnswerSubmitSerializer(many=True)
     time_taken = serializers.IntegerField(required=False)
 

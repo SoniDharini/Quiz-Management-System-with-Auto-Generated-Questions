@@ -889,24 +889,21 @@ class QuizSubmitView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        quiz_id = serializer.validated_data['quiz_id']
+        attempt_id = serializer.validated_data['attempt_id']
         answers_data = serializer.validated_data['answers']
         time_taken = serializer.validated_data.get('time_taken', 0)
         
         try:
-            quiz = Quiz.objects.get(id=quiz_id)
-        except Quiz.DoesNotExist:
-            return Response({'error': 'Quiz not found'}, status=status.HTTP_404_NOT_FOUND)
-        
-        # Create or get quiz attempt
-        attempt = QuizAttempt.objects.create(
-            user=request.user,
-            quiz=quiz,
-            total_questions=quiz.total_questions,
-            time_taken=time_taken,
-            status='completed',
-            completed_at=timezone.now()
-        )
+            attempt = QuizAttempt.objects.get(id=attempt_id, user=request.user, status='in_progress')
+        except QuizAttempt.DoesNotExist:
+            return Response({'error': 'Active quiz attempt not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+        quiz = attempt.quiz
+
+        # Update attempt details
+        attempt.time_taken = time_taken
+        attempt.status = 'completed'
+        attempt.completed_at = timezone.now()
         
         # Save answers
         for answer_data in answers_data:
@@ -920,8 +917,9 @@ class QuizSubmitView(APIView):
             except Question.DoesNotExist:
                 continue
         
-        # Calculate score
+        # Calculate score and save attempt
         attempt.calculate_score()
+        attempt.save()
         
         # Update user profile
         profile = request.user.profile
@@ -960,7 +958,7 @@ class QuizSubmitView(APIView):
             'xp_earned': attempt.xp_earned,
             'new_level': profile.level,
             'new_xp': profile.xp
-        }, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_200_OK)
 
 class QuizAttemptDetailView(APIView):
     """Get details of a specific quiz attempt"""
