@@ -1,3 +1,4 @@
+import random
 import json
 import io
 import traceback
@@ -336,12 +337,23 @@ class QuizConfigView(APIView):
 
 # ==================== AI QUIZ GENERATION VIEWS ====================
 
+# ... (imports)
+
+# Define topic constraints for Class 10 Mathematics
+TOPIC_CONSTRAINTS = {
+    'mathematics_10th': {
+        'easy': ['Real Numbers', 'Polynomials', 'Pair of Linear Equations in Two Variables', 'Arithmetic Progressions'],
+        'medium': ['Triangles', 'Coordinate Geometry', 'Introduction to Trigonometry', 'Quadratic Equations'],
+        'hard': ['Some Applications of Trigonometry', 'Circles', 'Constructions', 'Areas Related to Circles', 'Surface Areas and Volumes', 'Statistics', 'Probability']
+    }
+}
+
 class QuizGenerateView(APIView):
     """Generate quiz using OpenAI based on configuration"""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        # Support both config-based and direct parameter-based generation
+        # ... (rest of the code for getting config)
         config_id = request.data.get('config_id')
         
         if config_id:
@@ -372,7 +384,14 @@ class QuizGenerateView(APIView):
                 category = level.category
             except Subject.DoesNotExist:
                 return Response({'error': 'Subject not found'}, status=status.HTTP_404_NOT_FOUND)
-        
+
+        topic = subject.name
+        # Apply topic constraints for Class 10 Mathematics
+        if subject.name.lower() == 'mathematics' and level.name.lower() == '10th grade':
+            key = 'mathematics_10th'
+            if key in TOPIC_CONSTRAINTS and difficulty in TOPIC_CONSTRAINTS[key]:
+                topic = random.choice(TOPIC_CONSTRAINTS[key][difficulty])
+
         all_questions_data = []
         remaining_questions = num_questions
         batch_size = 10
@@ -380,8 +399,8 @@ class QuizGenerateView(APIView):
         while remaining_questions > 0:
             current_batch_size = min(batch_size, remaining_questions)
             
-            prompt = f"""Generate {current_batch_size} multiple-choice questions for a quiz on {subject.name} 
-            (Category: {category.name}, Level: {level.name}).
+            prompt = f"""Generate {current_batch_size} multiple-choice questions for a quiz on {topic} 
+            (Subject: {subject.name}, Category: {category.name}, Level: {level.name}).
             
             Difficulty: {difficulty}
             Standard: Indian curriculum
@@ -448,7 +467,7 @@ class QuizGenerateView(APIView):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # Create Quiz
-        quiz_title = custom_title or f"{subject.name} - {difficulty.capitalize()} Quiz"
+        quiz_title = custom_title or f"{subject.name} ({topic}) - {difficulty.capitalize()} Quiz"
         quiz = Quiz.objects.create(
             title=quiz_title,
             category=category,
@@ -534,6 +553,9 @@ class QuizGenerateFromFileView(APIView):
             return Response({'error': f'Unable to read file: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Prepare OpenAI prompt
+        print(f"DEBUG: Preparing OpenAI prompt with {len(file_content)} characters of file content.")
+        print(f"DEBUG: File content (first 500 chars): {file_content[:500]}...")
+        
         prompt = f"""Based on the following study material, generate {num_questions} multiple-choice questions.
         
         Difficulty: {difficulty}
@@ -563,7 +585,8 @@ class QuizGenerateFromFileView(APIView):
             )
             
             ai_content = response.choices[0].message.content.strip()
-            
+            print(f"DEBUG: Raw AI response content (first 500 chars): {ai_content[:500]}...")
+
             # Try to extract JSON if wrapped in markdown
             if '```json' in ai_content:
                 ai_content = ai_content.split('```json')[1]
@@ -578,6 +601,8 @@ class QuizGenerateFromFileView(APIView):
             if start_index != -1 and end_index != -1:
                 ai_content = ai_content[start_index:end_index+1]
             
+            print(f"DEBUG: AI response content after extraction attempts (first 500 chars): {ai_content[:500]}...")
+
             questions_data = json.loads(ai_content)
             
             # Get default category, level, subject if not provided
@@ -797,21 +822,36 @@ class QuizDetailView(APIView):
             return Response({'error': 'Quiz not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class QuizTakeView(APIView):
-    """Get quiz for taking (without answers)"""
+    """
+    Get quiz for taking.
+    - If user has an 'in_progress' attempt, questions are returned in original order.
+    - If user is starting a new quiz, questions are shuffled.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, quiz_id):
         try:
-            print(f"DEBUG: QuizTakeView - Looking for quiz_id={quiz_id}")
             quiz = Quiz.objects.get(id=quiz_id, is_published=True)
-            print(f"DEBUG: Found quiz: {quiz.title}")
+            
+            # Check for an existing 'in_progress' attempt
+            in_progress_attempt = QuizAttempt.objects.filter(
+                quiz=quiz,
+                user=request.user,
+                status='in_progress'
+            ).first()
+            
+            if not in_progress_attempt:
+                # User is starting a new quiz, so shuffle questions
+                questions = list(quiz.questions.all())
+                random.shuffle(questions)
+                # Attach shuffled questions to the quiz object for the serializer
+                quiz.questions_for_serializer = questions
+            
+            # If resuming, serializer will use default ordered questions
             serializer = QuizTakeSerializer(quiz)
             return Response(serializer.data)
+            
         except Quiz.DoesNotExist:
-            print(f"DEBUG: Quiz {quiz_id} not found or not published")
-            # Check if quiz exists at all
-            if Quiz.objects.filter(id=quiz_id).exists():
-                print(f"DEBUG: Quiz exists but is_published=False")
             return Response({'error': 'Quiz not found'}, status=status.HTTP_404_NOT_FOUND)
 
 # ==================== QUIZ ATTEMPT VIEWS ====================
@@ -974,6 +1014,8 @@ class RecentActivityView(APIView):
                 'score': attempt.score_percentage,
                 'date_obj': attempt.completed_at,
                 'xp': attempt.xp_earned,
+                'category': attempt.quiz.category.name,
+                'subject': attempt.quiz.subject.name,
             })
 
         # 2. Recent quizzes created
@@ -985,6 +1027,8 @@ class RecentActivityView(APIView):
                 'title': quiz.title,
                 'date_obj': quiz.created_at,
                 'xp': 100,  # Fixed XP for creating a quiz
+                'category': quiz.category.name,
+                'subject': quiz.subject.name,
             })
             
         # 3. Recent achievements unlocked

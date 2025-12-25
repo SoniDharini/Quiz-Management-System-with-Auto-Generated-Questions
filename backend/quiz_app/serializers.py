@@ -140,7 +140,7 @@ class QuizListSerializer(serializers.ModelSerializer):
 
 class QuizTakeSerializer(serializers.ModelSerializer):
     """Serializer for taking a quiz (questions without answers)"""
-    questions = QuestionWithoutAnswerSerializer(many=True, read_only=True)
+    questions = serializers.SerializerMethodField()
     category_name = serializers.CharField(source='category.name', read_only=True)
     subject_name = serializers.CharField(source='subject.name', read_only=True)
 
@@ -150,6 +150,13 @@ class QuizTakeSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'category', 'level', 'subject', 
             'category_name', 'subject_name', 'difficulty', 'time_limit', 'questions'
         ]
+    
+    def get_questions(self, obj):
+        # Check if a custom (e.g., shuffled) question list is passed in the context
+        if hasattr(obj, 'questions_for_serializer'):
+            return QuestionWithoutAnswerSerializer(obj.questions_for_serializer, many=True).data
+        # Fallback to the default ordered questions
+        return QuestionWithoutAnswerSerializer(obj.questions.all(), many=True).data
 
 class QuestionResultSerializer(serializers.ModelSerializer):
     """Question serializer with correct_answer for quiz results"""
@@ -237,7 +244,9 @@ class RecentActivitySerializer(serializers.Serializer):
     id = serializers.CharField()
     type = serializers.CharField()
     title = serializers.CharField()
-    score = serializers.IntegerField(required=False)
+    score = serializers.FloatField(required=False)
     date = serializers.CharField()
     xp = serializers.IntegerField()
+    category = serializers.CharField(required=False)
+    topic = serializers.CharField(required=False, source='subject')
 
