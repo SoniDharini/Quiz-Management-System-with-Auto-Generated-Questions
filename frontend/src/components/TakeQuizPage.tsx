@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft,
@@ -18,14 +19,16 @@ import {
   BarChart3,
   Award,
   Sparkles,
-  Zap
+  Zap,
+  Pause,
 } from 'lucide-react';
 import { quizAPI, categoryAPI } from '../services/api';
+import { saveQuizState, loadQuizState, clearQuizState, QuizState } from '../lib/quizPersistence';
 
 interface TakeQuizPageProps {
   onBack: () => void;
-  preselectedQuizId?: number | null;
 }
+
 
 type Step = 'category' | 'subcategory' | 'subject' | 'configure' | 'quiz' | 'results';
 
@@ -43,8 +46,10 @@ interface QuizQuestion {
   options: string[];
   correctAnswer: number;
 }
-
-export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
+export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
+  const navigate = useNavigate();
+  const { quizId: quizIdFromUrl } = useParams();
+  const preselectedQuizId = quizIdFromUrl ? parseInt(quizIdFromUrl) : null;
   const [currentStep, setCurrentStep] = useState<Step>('category');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
@@ -57,8 +62,10 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
   const [quizCompleted, setQuizCompleted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [loadedQuiz, setLoadedQuiz] = useState<any>(null);
   const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
+  const [attemptId, setAttemptId] = useState<number | null>(null);
 
   // API data state
   const [categories, setCategories] = useState<any[]>([]);
@@ -105,23 +112,34 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
       fetchCategories();
     }
   }, [currentStep]);
-
-  // If a quiz ID is preselected, skip to quiz step and load that quiz
+// If a quiz ID is preselected, check for saved state or load the quiz
   useEffect(() => {
-    console.log('TakeQuizPage useEffect - preselectedQuizId:', preselectedQuizId);
-    if (preselectedQuizId && preselectedQuizId > 0) {
-      console.log('Loading preselected quiz:', preselectedQuizId);
-      setCurrentStep('quiz'); // Go directly to quiz view
-      loadQuizById(preselectedQuizId);
-    } else {
-      console.log('No preselected quiz, showing category selection');
-      setCurrentStep('category');
-    }
+    const initializeQuiz = async () => {
+      if (preselectedQuizId && preselectedQuizId > 0) {
+        const savedState = loadQuizState();
+        
+        // If there's a saved state for this specific quiz, restore it
+        if (savedState && savedState.quizId === preselectedQuizId) {
+          console.log('Restoring saved quiz state:', savedState);
+          setLoadedQuiz({ id: savedState.quizId }); // Initially set ID to trigger loading
+          await loadQuizById(savedState.quizId, savedState);
+        } else {
+          // Otherwise, load the quiz from scratch
+          console.log('Loading preselected quiz from scratch:', preselectedQuizId);
+          await loadQuizById(preselectedQuizId);
+        }
+      } else {
+        console.log('No preselected quiz, showing category selection');
+        setCurrentStep('category');
+      }
+    };
+
+    initializeQuiz();
   }, [preselectedQuizId]);
 
   // Timer countdown logic
   useEffect(() => {
-    if (currentStep === 'quiz' && loadedQuiz && !quizCompleted) {
+    if (currentStep === 'quiz' && loadedQuiz && !quizCompleted && !isPaused) {
       if (timeLeft <= 0) {
         handleSubmitQuiz();
         return;
@@ -133,31 +151,63 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
 
       return () => clearInterval(timerId);
     }
-  }, [currentStep, loadedQuiz, quizCompleted, timeLeft]);
+  }, [currentStep, loadedQuiz, quizCompleted, timeLeft, isPaused]);
 
-  const loadQuizById = async (quizId: number) => {
+  // Save quiz state on page unload
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (currentStep === 'quiz' && loadedQuiz && !quizCompleted) {
+        saveQuizState({
+          quizId: loadedQuiz.id,
+          currentQuestionIndex,
+          selectedAnswers,
+          remainingTime: timeLeft,
+          attemptId,
+        });
+        // Note: Most modern browsers don't show this message
+        event.returnValue = 'Your quiz progress will be saved.';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [currentStep, loadedQuiz, quizCompleted, currentQuestionIndex, selectedAnswers, timeLeft, attemptId]);
+
+  const loadQuizById = async (quizId: number, restoredState: QuizState | null = null) => {
     try {
       setIsLoadingQuiz(true);
-      console.log('Loading quiz with ID:', quizId);
       const quizData = await quizAPI.getQuizToTake(quizId);
-      console.log('Quiz data received:', quizData);
       setLoadedQuiz(quizData);
       
-      // Set the category, level, and subject to ensure correct back navigation
+      // Set metadata for navigation and display
       setSelectedCategory(quizData.category.toString());
       setSelectedSubcategory(quizData.level.toString());
       setSelectedSubject(quizData.subject.toString());
 
-      // Initialize timer with the time limit from the quiz data
-      if (quizData.time_limit) {
-        setTimeLeft(quizData.time_limit);
+      if (restoredState) {
+        // If we are restoring from a saved state
+        setTimeLeft(restoredState.remainingTime);
+        setSelectedAnswers(restoredState.selectedAnswers);
+        setCurrentQuestionIndex(restoredState.currentQuestionIndex);
+        setAttemptId(restoredState.attemptId);
+      } else {
+        // If starting a new quiz, initialize state
+        const newAttempt = await quizAPI.startQuiz(quizId);
+        setAttemptId(newAttempt.id);
+        setTimeLeft(quizData.time_limit || 600);
+        setSelectedAnswers({});
+        setCurrentQuestionIndex(0);
+        clearQuizState(); // Clear any previous state
       }
       
       setCurrentStep('quiz');
+      setIsPaused(false); // Ensure quiz is not paused on load
     } catch (error) {
       console.error('Failed to load quiz:', error);
       alert('Failed to load quiz. Please try again.');
-      // Don't navigate back if we're already showing quiz interface
       if (currentStep !== 'quiz') {
         onBack();
       }
@@ -537,6 +587,14 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
       
       // Load the generated quiz
       if (result.quiz_id) {
+        // Before loading a new quiz, check if another is in progress
+        const ongoingQuiz = loadQuizState();
+        if (ongoingQuiz) {
+          alert('You have an ongoing quiz. Please complete it before starting a new one.');
+          // Optionally, navigate to the ongoing quiz
+          // navigate(`/take-quiz/${ongoingQuiz.quizId}`);
+          return;
+        }
         console.log('Loading quiz with ID:', result.quiz_id);
         await loadQuizById(result.quiz_id);
       } else {
@@ -549,6 +607,23 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
     } finally {
       setIsGeneratingQuiz(false);
     }
+  };
+
+  const handlePauseQuiz = () => {
+    if (!loadedQuiz) return;
+    
+    saveQuizState({
+      quizId: loadedQuiz.id,
+      currentQuestionIndex,
+      selectedAnswers,
+      remainingTime: timeLeft,
+      attemptId,
+    });
+    
+    setIsPaused(true);
+    // onBack(); // or navigate to a specific "paused" screen
+    navigate('/');
+    alert('Quiz paused. You can resume it from the homepage.');
   };
 
   const handleAnswerSelect = (optionIndex: number) => {
@@ -566,22 +641,23 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
 
   const handlePreviousQuestion = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
 
   const handleSubmitQuiz = async () => {
-    if (!loadedQuiz) return;
+    if (!loadedQuiz || !attemptId) return;
     const answers = Object.keys(selectedAnswers).map(questionIndex => ({
       question_id: quizQuestions[parseInt(questionIndex)].id,
-      selected_option: selectedAnswers[parseInt(questionIndex)]
+      selected_option_index: selectedAnswers[parseInt(questionIndex)]
     }));
 
     try {
-      const results = await quizAPI.submitQuiz(loadedQuiz.id, answers, timeLeft);
+      const results = await quizAPI.submitQuiz(attemptId, answers);
       setQuizResults(results);
       setCurrentStep('results');
       setQuizCompleted(true);
+      clearQuizState(); // Quiz finished, clear the saved state
     } catch (error) {
       console.error('Failed to submit quiz:', error);
       alert('Failed to submit quiz. Please try again.');
@@ -747,7 +823,7 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
               />
             </motion.div>
           );
-        })
+        }) 
         )}
       </div>
     </motion.div>
@@ -932,7 +1008,7 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
                 <motion.button
                   key={level}
                   onClick={() => setDifficulty(level)}
-                  className={`py-4 rounded-2xl transition-all ${
+                  className={`py-4 rounded-2xl transition-all ${ 
                     difficulty === level
                       ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white shadow-lg border-2 border-[#003B73]'
                       : 'bg-white border-2 border-[#003B73]/20 text-[#003B73] hover:border-[#003B73]/40 hover:shadow-md'
@@ -942,21 +1018,21 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
                 >
                   <div className="flex flex-col items-center gap-2">
                     {level === 'easy' && (
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${ 
                         difficulty === level ? 'bg-white/20' : 'bg-green-100'
                       }`}>
                         <span className={difficulty === level ? 'text-white' : 'text-green-600'}>😊</span>
                       </div>
                     )}
                     {level === 'medium' && (
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${ 
                         difficulty === level ? 'bg-white/20' : 'bg-yellow-100'
                       }`}>
                         <span className={difficulty === level ? 'text-white' : 'text-yellow-600'}>🤔</span>
                       </div>
                     )}
                     {level === 'hard' && (
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${ 
                         difficulty === level ? 'bg-white/20' : 'bg-red-100'
                       }`}>
                         <span className={difficulty === level ? 'text-white' : 'text-red-600'}>🔥</span>
@@ -1018,7 +1094,7 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
           <motion.button
             onClick={handleGenerateQuiz}
             disabled={isGeneratingQuiz || !numQuestions || parseInt(numQuestions) < 5 || parseInt(numQuestions) > 100}
-            className={`flex items-center gap-3 px-10 py-5 rounded-2xl shadow-lg transition-all ${
+            className={`flex items-center gap-3 px-10 py-5 rounded-2xl shadow-lg transition-all ${ 
               !isGeneratingQuiz && numQuestions && parseInt(numQuestions) >= 5 && parseInt(numQuestions) <= 100
                 ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white hover:shadow-xl'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -1126,7 +1202,7 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
                   <motion.button
                     key={index}
                     onClick={() => handleAnswerSelect(index)}
-                    className={`w-full p-6 rounded-2xl border-2 transition-all text-left ${
+                    className={`w-full p-6 rounded-2xl border-2 transition-all text-left ${ 
                       isSelected
                         ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] border-[#003B73] text-white shadow-lg'
                         : 'bg-white/50 border-[#003B73]/10 text-[#003B73] hover:border-[#003B73]/30 hover:shadow-md'
@@ -1135,7 +1211,7 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
                     whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
+                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${ 
                         isSelected ? 'border-white bg-white/20' : 'border-[#003B73]/30'
                       }`}>
                         <span className={isSelected ? 'text-white' : 'text-[#003B73]/60'}>
@@ -1156,7 +1232,7 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
           <motion.button
             onClick={handlePreviousQuestion}
             disabled={currentQuestionIndex === 0}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all ${ 
               currentQuestionIndex === 0
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 : 'bg-white text-[#003B73] border-2 border-[#003B73]/20 hover:shadow-lg'
@@ -1169,11 +1245,20 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
           </motion.button>
 
           <div className="flex gap-3">
+            <motion.button
+              onClick={handlePauseQuiz}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Pause className="w-5 h-5" />
+              Pause
+            </motion.button>
             {currentQuestionIndex === quizQuestions.length - 1 ? (
               <motion.button
                 onClick={handleSubmitQuiz}
                 disabled={Object.keys(selectedAnswers).length !== quizQuestions.length}
-                className={`flex items-center gap-2 px-8 py-3 rounded-xl shadow-lg transition-all ${
+                className={`flex items-center gap-2 px-8 py-3 rounded-xl shadow-lg transition-all ${ 
                   Object.keys(selectedAnswers).length === quizQuestions.length
                     ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:shadow-xl'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -1210,7 +1295,7 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
                 <motion.button
                   key={index}
                   onClick={() => setCurrentQuestionIndex(index)}
-                  className={`w-10 h-10 rounded-lg border-2 transition-all ${
+                  className={`w-10 h-10 rounded-lg border-2 transition-all ${ 
                     isCurrent
                       ? 'bg-gradient-to-br from-[#003B73] to-[#0056A8] border-[#003B73] text-white shadow-md'
                       : isAnswered
@@ -1263,7 +1348,7 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
             transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
             className="mb-6"
           >
-            <div className={`w-32 h-32 mx-auto rounded-full flex items-center justify-center shadow-2xl ${
+            <div className={`w-32 h-32 mx-auto rounded-full flex items-center justify-center shadow-2xl ${ 
               isPassed
                 ? 'bg-gradient-to-br from-green-400 to-green-600'
                 : 'bg-gradient-to-br from-orange-400 to-orange-600'
@@ -1355,14 +1440,14 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
               return (
                 <div
                   key={question.id}
-                  className={`p-4 rounded-xl border-2 ${
+                  className={`p-4 rounded-xl border-2 ${ 
                     isCorrect
                       ? 'bg-green-50 border-green-200'
                       : 'bg-red-50 border-red-200'
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${ 
                       isCorrect ? 'bg-green-500' : 'bg-red-500'
                     }`}>
                       {isCorrect ? (
@@ -1395,12 +1480,17 @@ export function TakeQuizPage({ onBack, preselectedQuizId }: TakeQuizPageProps) {
         <div className="flex justify-center gap-4">
           <motion.button
             onClick={() => {
-              setCurrentStep('subject');
-              setSelectedAnswers({});
-              setCurrentQuestionIndex(0);
-              setQuizCompleted(false);
-              setLoadedQuiz(null); // Reset the loaded quiz
+              // Reset state for a new quiz
+              setCurrentStep('category'); // Go back to the beginning
+              setSelectedCategory('');
+              setSelectedSubcategory('');
+              setSelectedSubject('');
+              setLoadedQuiz(null);
               setQuizResults(null);
+              setQuizCompleted(false);
+              setCurrentQuestionIndex(0);
+              setSelectedAnswers({});
+              clearQuizState(); // Make sure no state persists
             }}
             className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-2xl shadow-lg hover:shadow-xl transition-all"
             whileHover={{ scale: 1.05 }}

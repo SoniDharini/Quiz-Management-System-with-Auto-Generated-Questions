@@ -59,7 +59,10 @@ def test_login(user_data):
         
         if response.status_code == 200:
             print("Login successful!")
-            print("Response:", json.dumps(response.json(), indent=2))
+            response_data = response.json()
+            print("Response:", json.dumps(response_data, indent=2))
+            with open("token.txt", "w") as f:
+                f.write(response_data["token"])
         else:
             print("Login failed.")
             try:

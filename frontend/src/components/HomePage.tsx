@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { motion } from 'motion/react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   Bot, 
   Brain, 
@@ -21,23 +22,38 @@ import {
   Clock,
   Users,
   Lightbulb,
-  Rocket
+  Rocket,
+  History,
+  X,
 } from 'lucide-react';
+import { loadQuizState, QuizState, clearQuizState } from '../lib/quizPersistence';
 
 interface HomePageProps {
   onLogout: () => void;
   onNavigateToProfile: () => void;
   onNavigateToCreateQuiz: () => void;
   onNavigateToFeatures: () => void;
-  onNavigateToTakeQuiz: () => void;
+  onNavigateToTakeQuiz: (quizId?: number) => void;
 }
 
 export function HomePage({ onLogout, onNavigateToProfile, onNavigateToCreateQuiz, onNavigateToFeatures, onNavigateToTakeQuiz }: HomePageProps) {
+  const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [streak, setStreak] = useState(7);
   const [xp, setXp] = useState(2450);
   const [level, setLevel] = useState(8);
+  const [ongoingQuiz, setOngoingQuiz] = useState<QuizState | null>(null);
+
+  const [showDismissConfirm, setShowDismissConfirm] = useState(false);
+
+  useEffect(() => {
+    // Check for an ongoing quiz when the homepage loads
+    const savedQuiz = loadQuizState();
+    if (savedQuiz) {
+      setOngoingQuiz(savedQuiz);
+    }
+  }, []);
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -51,6 +67,37 @@ export function HomePage({ onLogout, onNavigateToProfile, onNavigateToCreateQuiz
 
   const cancelLogout = () => {
     setShowLogoutConfirm(false);
+  };
+
+  const handleDismissQuiz = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDismissConfirm(true);
+  };
+
+  const confirmDismiss = () => {
+    clearQuizState();
+    setOngoingQuiz(null);
+    setShowDismissConfirm(false);
+  };
+
+  const cancelDismiss = () => {
+    setShowDismissConfirm(false);
+  };
+
+  const handleTakeQuizClick = () => {
+    if (ongoingQuiz) {
+      alert('You have an ongoing quiz. Please complete it before starting a new one.');
+    } else {
+      onNavigateToTakeQuiz();
+    }
+  };
+
+  const handleCreateQuizClick = () => {
+    if (ongoingQuiz) {
+      alert('You have an ongoing quiz. Please complete it before starting a new one.');
+    } else {
+      onNavigateToCreateQuiz();
+    }
   };
 
   return (
@@ -77,7 +124,7 @@ export function HomePage({ onLogout, onNavigateToProfile, onNavigateToCreateQuiz
             {/* Center Actions */}
             <div className="hidden md:flex items-center gap-4">
               <motion.button
-                onClick={onNavigateToCreateQuiz}
+                onClick={handleCreateQuizClick}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-2xl shadow-lg hover:shadow-xl transition-all"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
@@ -87,7 +134,7 @@ export function HomePage({ onLogout, onNavigateToProfile, onNavigateToCreateQuiz
               </motion.button>
               
               <motion.button
-                onClick={() => onNavigateToTakeQuiz()}
+                onClick={handleTakeQuizClick}
                 className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-[#003B73] text-[#003B73] rounded-2xl shadow-md hover:shadow-lg transition-all"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
@@ -415,6 +462,114 @@ export function HomePage({ onLogout, onNavigateToProfile, onNavigateToCreateQuiz
           </motion.div>
         </div>
 
+        {/* Recent Activities Section */}
+        {ongoingQuiz && (
+          <motion.div
+            className="mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <div className="text-center mb-12">
+              <motion.div
+                className="inline-flex items-center gap-2 mb-4"
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              >
+                <History className="w-8 h-8 text-[#003B73]" />
+                <h2 className="text-[#003B73]">Recent Activities</h2>
+              </motion.div>
+              <p className="text-[#003B73]/70 max-w-2xl mx-auto">
+                You have a quiz in progress. Resume where you left off!
+              </p>
+            </div>
+
+            <motion.div
+              className="group relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 border-2 border-yellow-400 shadow-xl hover:shadow-2xl transition-all cursor-pointer overflow-hidden max-w-2xl mx-auto"
+              whileHover={{ y: -8, scale: 1.02 }}
+            >
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                  <h3 className="text-[#003B73] mb-2">Quiz Paused</h3>
+                  <p className="text-[#003B73]/70">
+                    You have an ongoing quiz. Click here to resume.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <motion.button
+                    onClick={() => onNavigateToTakeQuiz(ongoingQuiz.quizId)}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-2xl shadow-lg"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <Zap className="w-5 h-5" />
+                    <span>Resume Quiz</span>
+                  </motion.button>
+                  <motion.button
+                    onClick={(e) => handleDismissQuiz(e)}
+                    className="flex items-center gap-2 px-6 py-3 bg-red-500 to-red-600 text-white rounded-2xl shadow-lg"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <X className="w-5 h-5" />
+                    <span>Dismiss</span>
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+      {/* Dismiss Confirmation Modal */}
+      {showDismissConfirm && (
+        <>
+          {/* Backdrop */}
+          <motion.div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={cancelDismiss}
+          />
+          
+          {/* Modal */}
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <motion.div 
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-[#003B73]/10"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <X className="w-8 h-8 text-red-600" />
+                </div>
+                <h2 className="text-[#003B73] mb-2">Confirm Dismiss</h2>
+                <p className="text-[#003B73]/70">
+                  Are you sure you want to dismiss this quiz? Your progress will be lost.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <motion.button
+                  onClick={cancelDismiss}
+                  className="flex-1 py-3.5 bg-gradient-to-r from-[#DFF4FF] to-white border-2 border-[#003B73]/20 text-[#003B73] rounded-2xl hover:shadow-lg transition-all"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  onClick={confirmDismiss}
+                  className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Yes, Dismiss
+                </motion.button>
+              </div>
+            </motion.div>
+          </div>
+        </>
+      )}
+
         {/* Tools & Features Section */}
         <motion.div
           className="mb-16"
@@ -580,7 +735,7 @@ export function HomePage({ onLogout, onNavigateToProfile, onNavigateToCreateQuiz
 
           {/* Take Quiz Card */}
           <motion.div
-            onClick={() => onNavigateToTakeQuiz()}
+            onClick={handleTakeQuizClick}
             className="group relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 border-2 border-[#003B73]/10 shadow-xl hover:shadow-2xl transition-all cursor-pointer overflow-hidden"
             whileHover={{ y: -8, scale: 1.02 }}
             initial={{ opacity: 0, x: 20 }}

@@ -1,14 +1,15 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Mail, Lock, Bot, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { authAPI } from '../services/api';
 
 interface LoginPageProps {
   onLogin: () => void;
-  onNavigateToSignUp: () => void;
 }
 
-export function LoginPage({ onLogin, onNavigateToSignUp }: LoginPageProps) {
+export function LoginPage({ onLogin }: LoginPageProps) {
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,7 +23,8 @@ export function LoginPage({ onLogin, onNavigateToSignUp }: LoginPageProps) {
 
     try {
       await authAPI.login(username, password);
-      onLogin();
+      onLogin(); // Update auth state in App
+      navigate('/'); // Navigate to home
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -214,7 +216,8 @@ export function LoginPage({ onLogin, onNavigateToSignUp }: LoginPageProps) {
               <p className="text-[#003B73]/60">
                 Don&apos;t have an account?{' '}
                 <button 
-                  onClick={onNavigateToSignUp}
+                  type="button"
+                  onClick={() => navigate('/signup')}
                   className="text-[#003B73] hover:text-[#003B73]/70 transition-colors"
                 >
                   Sign Up

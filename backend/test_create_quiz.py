@@ -3,7 +3,8 @@ import os
 
 # API settings
 BASE_URL = "http://127.0.0.1:8000/api"
-TOKEN = "8cf0922e62e15250065428121708943ce5ea1723"
+with open("token.txt", "r") as f:
+    TOKEN = f.read()
 
 headers = {
     "Authorization": f"Token {TOKEN}"

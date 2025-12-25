@@ -1,109 +1,83 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { HomePage } from './components/HomePage';
 import { LoginPage } from './components/LoginPage';
 import { SignUpPage } from './components/SignUpPage';
-import { HomePage } from './components/HomePage';
-import { ProfilePage } from './components/ProfilePage';
 import { CreateQuizPage } from './components/CreateQuizPage';
 import { FeaturesPage } from './components/FeaturesPage';
+import { ProfilePage } from './components/ProfilePage';
 import { TakeQuizPage } from './components/TakeQuizPage';
-import { isAuthenticated, authAPI } from './services/api';
 
-type Page = 'login' | 'signup' | 'home' | 'profile' | 'create-quiz' | 'features' | 'take-quiz';
-
-export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('login');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedQuizId, setSelectedQuizId] = useState<number | null>(null);
-
-  useEffect(() => {
-    // Check if user is already logged in
-    if (isAuthenticated()) {
-      setIsLoggedIn(true);
-      setCurrentPage('home');
-    }
-  }, []);
+function AppContent() {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // Default to true for now
 
   const handleLogin = () => {
-    setIsLoggedIn(true);
-    setCurrentPage('home');
+    setIsAuthenticated(true);
+    navigate('/');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    navigate('/login');
   };
 
   const handleSignUp = () => {
-    setIsLoggedIn(true);
-    setCurrentPage('home');
+    // Implement sign up logic
+    navigate('/login');
   };
 
-  const handleLogout = async () => {
-    await authAPI.logout();
-    setIsLoggedIn(false);
-    setCurrentPage('login');
-  };
-
-  const handleNavigateToProfile = () => {
-    setCurrentPage('profile');
-  };
-
-  const handleNavigateToCreateQuiz = () => {
-    setSelectedQuizId(null); // Clear any existing quiz ID
-    setCurrentPage('create-quiz');
-  };
-
-  const handleNavigateToFeatures = () => {
-    setCurrentPage('features');
-  };
-
-  const handleNavigateToTakeQuiz = (quizId?: number) => {
-    console.log('Navigating to take quiz with ID:', quizId);
-    setSelectedQuizId(quizId || null);
-    setCurrentPage('take-quiz');
-  };
-
-  const handleBackToHome = () => {
-    setSelectedQuizId(null); // Clear selected quiz when going back
-    setCurrentPage('home');
-  };
-
-  if (currentPage === 'login') {
+  if (!isAuthenticated) {
     return (
-      <LoginPage 
-        onLogin={handleLogin}
-        onNavigateToSignUp={() => setCurrentPage('signup')}
-      />
+      <Routes>
+        <Route path="/login" element={<LoginPage onLogin={handleLogin} onNavigateToSignUp={() => navigate('/signup')} />} />
+        <Route path="/signup" element={<SignUpPage onSignUp={handleSignUp} onNavigateToLogin={() => navigate('/login')} />} />
+        {/* Redirect all other paths to login if not authenticated */}
+        <Route path="*" element={<LoginPage onLogin={handleLogin} onNavigateToSignUp={() => navigate('/signup')} />} />
+      </Routes>
     );
-  }
-
-  if (currentPage === 'signup') {
-    return (
-      <SignUpPage 
-        onSignUp={handleSignUp}
-        onNavigateToLogin={() => setCurrentPage('login')}
-      />
-    );
-  }
-
-  if (currentPage === 'profile') {
-    return <ProfilePage onBack={handleBackToHome} onLogout={handleLogout} />;
-  }
-
-  if (currentPage === 'create-quiz') {
-    return <CreateQuizPage onBack={handleBackToHome} onNavigateToTakeQuiz={handleNavigateToTakeQuiz} />;
-  }
-
-  if (currentPage === 'features') {
-    return <FeaturesPage onBack={handleBackToHome} />;
-  }
-
-  if (currentPage === 'take-quiz') {
-    return <TakeQuizPage onBack={handleBackToHome} preselectedQuizId={selectedQuizId} />;
   }
 
   return (
-    <HomePage 
-      onLogout={handleLogout} 
-      onNavigateToProfile={handleNavigateToProfile}
-      onNavigateToCreateQuiz={handleNavigateToCreateQuiz}
-      onNavigateToFeatures={handleNavigateToFeatures}
-      onNavigateToTakeQuiz={handleNavigateToTakeQuiz}
-    />
+    <Routes>
+      <Route path="/" element={
+        <HomePage 
+          onLogout={handleLogout}
+          onNavigateToProfile={() => navigate('/profile')}
+          onNavigateToCreateQuiz={() => navigate('/create-quiz')}
+          onNavigateToFeatures={() => navigate('/features')}
+          onNavigateToTakeQuiz={(quizId) => navigate(quizId ? `/take-quiz/${quizId}` : '/take-quiz')}
+        />
+      } />
+      <Route path="/create-quiz" element={<CreateQuizPage onBack={() => navigate('/')} onNavigateToTakeQuiz={(quizId) => navigate(quizId ? `/take-quiz/${quizId}` : '/take-quiz')} />} />
+      <Route path="/features" element={<FeaturesPage onBack={() => navigate('/')} />} />
+      <Route path="/profile" element={<ProfilePage onBack={() => navigate('/')} onLogout={handleLogout} />} />
+      <Route path="/take-quiz" element={<TakeQuizPage onBack={() => navigate('/')} />} />
+      <Route path="/take-quiz/:quizId" element={<TakeQuizPage onBack={() => navigate('/')} />} />
+    </Routes>
   );
+}
+
+
+
+import ErrorBoundary from './components/ErrorBoundary';
+
+
+
+export default function App() {
+
+  return (
+
+    <BrowserRouter>
+
+      <ErrorBoundary>
+
+        <AppContent />
+
+      </ErrorBoundary>
+
+    </BrowserRouter>
+
+  );
+
 }

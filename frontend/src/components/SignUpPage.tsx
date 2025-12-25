@@ -1,14 +1,15 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Mail, Lock, User, Brain, BookOpen, Sparkles, Eye, EyeOff, Upload } from 'lucide-react';
 import { authAPI } from '../services/api';
 
 interface SignUpPageProps {
   onSignUp: () => void;
-  onNavigateToLogin: () => void;
 }
 
-export function SignUpPage({ onSignUp, onNavigateToLogin }: SignUpPageProps) {
+export function SignUpPage({ onSignUp }: SignUpPageProps) {
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +38,8 @@ export function SignUpPage({ onSignUp, onNavigateToLogin }: SignUpPageProps) {
 
     try {
       await authAPI.register(username, email, password, confirmPassword);
-      onSignUp();
+      onSignUp(); // Update auth state in App
+      navigate('/'); // Navigate to home
     } catch (err: any) {
       const errorMsg = err.message;
       try {
@@ -305,7 +307,8 @@ export function SignUpPage({ onSignUp, onNavigateToLogin }: SignUpPageProps) {
               <p className="text-[#003B73]/60">
                 Already have an account?{' '}
                 <button 
-                  onClick={onNavigateToLogin}
+                  type="button"
+                  onClick={() => navigate('/login')}
                   className="text-[#003B73] hover:text-[#003B73]/70 transition-colors"
                 >
                   Login
