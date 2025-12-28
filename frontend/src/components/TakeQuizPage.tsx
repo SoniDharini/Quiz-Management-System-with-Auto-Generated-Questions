@@ -75,6 +75,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [quizResults, setQuizResults] = useState<any>(null);
   const [recommendedQuizzes, setRecommendedQuizzes] = useState<any[]>([]);
+  const [streakInfo, setStreakInfo] = useState<{lost: boolean, current: number} | null>(null);
 
   // Load recommended quizzes on mount
   useEffect(() => {
@@ -655,6 +656,9 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
     try {
       const results = await quizAPI.submitQuiz(attemptId, answers);
       setQuizResults(results);
+      if (results.streak_lost !== undefined) {
+        setStreakInfo({ lost: results.streak_lost, current: results.current_streak });
+      }
       setCurrentStep('results');
       setQuizCompleted(true);
       clearQuizState(); // Quiz finished, clear the saved state
@@ -1370,6 +1374,17 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
             {isPassed ? 'Congratulations!' : 'Good Effort!'}
           </motion.h1>
           
+          {streakInfo && streakInfo.lost && (
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-[#003B73]/70">
+              You lost your previous streak, but you've started a new one of {streakInfo.current} day!
+            </motion.p>
+          )}
+          {streakInfo && !streakInfo.lost && streakInfo.current > 1 && (
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-[#003B73]/70">
+              You've extended your streak to {streakInfo.current} days! Keep it up!
+            </motion.p>
+          )}
+
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

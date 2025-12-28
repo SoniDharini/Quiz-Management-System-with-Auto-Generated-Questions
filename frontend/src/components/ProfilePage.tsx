@@ -21,7 +21,8 @@ import {
   Crown,
   Clock,
   CheckCircle,
-  Loader2
+  Loader2,
+  Flame
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { userAPI, quizAPI, getStoredUsername } from '../services/api';
@@ -35,6 +36,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'performance' | 'achievements'>('overview');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showEditPicture, setShowEditPicture] = useState(false);
+  const [showStreakModal, setShowStreakModal] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [quizHistory, setQuizHistory] = useState<any[]>([]);
@@ -88,6 +90,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
           xpToNextLevel: profile.xp_to_next_level || 100,
           streak: profile.current_streak || 0,
           longestStreak: profile.longest_streak || 0,
+          last_quiz_date: profile.last_quiz_date,
           totalQuizzes: profile.total_quizzes_taken || 0,
           quizzesCreated: profile.total_quizzes_created || 0,
           quizzesTaken: profile.total_quizzes_taken || 0,
@@ -336,6 +339,48 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-12">
+        {showStreakModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+              <motion.div 
+                className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-[#003B73]/10"
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                  <div className="text-center mb-6">
+                      <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <Flame className="w-8 h-8 text-white" />
+                      </div>
+                      <h2 className="text-[#003B73] mb-2">Quiz Streak</h2>
+                  </div>
+                  <div className="text-center mb-6">
+                      <p className="text-6xl text-[#003B73] mb-2">{userData.streak}</p>
+                      <p className="text-[#003B73]/70">Current daily streak</p>
+                  </div>
+                  <div className="text-center mb-6">
+                      <p className="text-2xl text-[#003B73] mb-2">{userData.longestStreak}</p>
+                      <p className="text-[#003B73]/70">Longest streak</p>
+                  </div>
+                  <div className="text-center mb-6">
+                      <p className="text-2xl text-[#003B73] mb-2">{userData.last_quiz_date}</p>
+                      <p className="text-[#003B73]/70">Last quiz date</p>
+                  </div>
+                  <div className="text-center text-[#003B73]/70">
+                      <p>Keep it up! Complete a quiz every day to maintain your streak.</p>
+                  </div>
+                  <div className="flex justify-center mt-6">
+                      <motion.button
+                          onClick={() => setShowStreakModal(false)}
+                          className="flex-1 py-3.5 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                      >
+                          Close
+                      </motion.button>
+                  </div>
+              </motion.div>
+          </div>
+        )}
         {/* Profile Header Card */}
         <motion.div
           className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10 p-8 mb-8"
@@ -385,10 +430,6 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
 
               {/* Quick Stats */}
               <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-600 text-white rounded-xl shadow-lg">
-                  <Target className="w-4 h-4" />
-                  <span>{userData.streak} Day Streak</span>
-                </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-xl shadow-lg">
                   <Trophy className="w-4 h-4" />
                   <span>Level {userData.level}</span>
@@ -512,13 +553,13 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                <div className="flex items-center gap-3 mb-3">
+                <button onClick={() => setShowStreakModal(true)} className="w-full h-full flex flex-col items-center justify-center gap-3 text-[#003B73]">
                   <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center">
-                    <Target className="w-6 h-6 text-white" />
+                    <Flame className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-[#003B73]">{userData.longestStreak}</h3>
-                </div>
-                <p className="text-[#003B73]/70">Longest Streak</p>
+                  <h3 className="text-[#003B73]">{userData.streak} Day Streak</h3>
+                  <p className="text-[#003B73]/70">View Details</p>
+                </button>
               </motion.div>
 
               <motion.div

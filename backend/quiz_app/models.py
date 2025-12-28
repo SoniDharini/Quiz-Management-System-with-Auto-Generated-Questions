@@ -68,7 +68,7 @@ class UserProfile(models.Model):
     # Streak tracking
     current_streak = models.IntegerField(default=0)
     longest_streak = models.IntegerField(default=0)
-    last_activity_date = models.DateField(null=True, blank=True)
+    last_quiz_date = models.DateField(null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -85,25 +85,49 @@ class UserProfile(models.Model):
         total_score = sum(attempt.score_percentage for attempt in attempts)
         return round(total_score / len(attempts), 1)
 
-    def update_streak(self):
-        """Update user's streak based on activity"""
-        today = timezone.now().date()
-        if self.last_activity_date:
-            days_diff = (today - self.last_activity_date).days
+    def update_streak(self, today=None):
+        """
+        Update the user's streak based on the last activity date.
+        This method should be called *after* a quiz is taken.
+        """
+        if today is None:
+            today = timezone.now().date()
+
+        self.streak_was_just_reset = False
+        if self.last_quiz_date:
+            days_diff = (today - self.last_quiz_date).days
             if days_diff == 1:
                 # Consecutive day
                 self.current_streak += 1
-                if self.current_streak > self.longest_streak:
-                    self.longest_streak = self.current_streak
             elif days_diff > 1:
-                # Streak broken
+                # Streak broken, new streak starts
                 self.current_streak = 1
-            # Same day, no change needed
+                self.streak_was_just_reset = True
+            # If days_diff is 0, it means another quiz on the same day. Do nothing.
         else:
+            # First quiz ever
             self.current_streak = 1
+            self.streak_was_just_reset = True
+
+        if self.current_streak > self.longest_streak:
+            self.longest_streak = self.current_streak
         
-        self.last_activity_date = today
+        self.last_quiz_date = today
         self.save()
+
+    def check_streak(self, today=None):
+        """
+        Check if the streak is broken and reset it if necessary.
+        This method should be called when fetching user profile, before taking a quiz.
+        """
+        if today is None:
+            today = timezone.now().date()
+        
+        if self.last_quiz_date:
+            days_diff = (today - self.last_quiz_date).days
+            if days_diff > 1:
+                self.current_streak = 0
+                self.save()
 
     def add_xp(self, xp_amount):
         """Add XP and handle level ups"""

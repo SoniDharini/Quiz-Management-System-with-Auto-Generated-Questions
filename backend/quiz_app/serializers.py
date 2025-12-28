@@ -46,7 +46,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'category_preference', 'bio', 'level', 'xp', 'xp_to_next_level',
             'total_quizzes_taken', 'total_quizzes_created', 'total_correct_answers',
             'total_questions_answered', 'current_streak', 'longest_streak',
-            'average_score', 'last_activity_date', 'created_at', 'updated_at'
+            'average_score', 'last_quiz_date', 'created_at', 'updated_at'
         ]
         read_only_fields = [
             'level', 'xp', 'xp_to_next_level', 'total_quizzes_taken',

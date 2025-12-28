@@ -133,7 +133,7 @@ class LoginView(ObtainAuthToken):
         
         # Update user profile activity
         profile = user.profile
-        profile.update_streak()
+        profile.check_streak()
         
         return Response({
             'token': token.key,
@@ -274,6 +274,7 @@ class UserProfileView(APIView):
     def get(self, request):
         try:
             profile = request.user.profile
+            profile.check_streak()
             serializer = UserProfileSerializer(profile)
             return Response(serializer.data)
         except UserProfile.DoesNotExist:
@@ -928,6 +929,7 @@ class QuizSubmitView(APIView):
         profile.total_correct_answers += attempt.correct_answers
         profile.add_xp(attempt.xp_earned)
         profile.update_streak()
+        streak_lost = getattr(profile, 'streak_was_just_reset', False)
         
         # Update analytics
         analytics, created = QuizAnalytics.objects.get_or_create(user=request.user)
@@ -957,7 +959,10 @@ class QuizSubmitView(APIView):
             'quiz': quiz_serializer.data,
             'xp_earned': attempt.xp_earned,
             'new_level': profile.level,
-            'new_xp': profile.xp
+            'new_xp': profile.xp,
+            'streak_lost': streak_lost,
+            'current_streak': profile.current_streak,
+            'longest_streak': profile.longest_streak
         }, status=status.HTTP_200_OK)
 
 class QuizAttemptDetailView(APIView):
