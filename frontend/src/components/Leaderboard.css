@@ -1,0 +1,192 @@
+.leaderboard-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  
+  .leaderboard-modal {
+    background-color: white;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 500px;
+    border: 1px solid rgba(0, 59, 115, 0.1);
+    overflow: hidden;
+  }
+  
+  .leaderboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(0, 59, 115, 0.1);
+  }
+  
+  .leaderboard-title-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #003B73;
+  }
+  
+  .leaderboard-title-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+  
+  .leaderboard-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  
+  .leaderboard-close-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #003B73;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  
+  .leaderboard-close-button:hover {
+    opacity: 1;
+  }
+  
+  .leaderboard-content {
+    padding: 1.5rem;
+  }
+  
+  .leaderboard-top-three {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    margin-bottom: 2rem;
+    gap: 1rem;
+  }
+  
+  .leaderboard-top-user {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .leaderboard-top-user.rank-1 {
+    order: 2;
+    transform: scale(1.1);
+  }
+  
+  .leaderboard-top-user.rank-2 {
+    order: 1;
+  }
+  
+  .leaderboard-top-user.rank-3 {
+    order: 3;
+  }
+  
+  .leaderboard-user-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #DFF4FF, #B9E7FF);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    color: #003B73;
+    margin-bottom: 0.5rem;
+  }
+  
+  .leaderboard-user-avatar.small {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  
+  .leaderboard-user-rank-icon {
+    font-size: 2rem;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+  
+  .leaderboard-user-info {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .leaderboard-user-name {
+    font-weight: 600;
+    color: #003B73;
+  }
+  
+  .leaderboard-user-xp {
+    color: #003B73;
+    opacity: 0.8;
+  }
+  
+  .leaderboard-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .leaderboard-list-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    transition: background-color 0.2s;
+  }
+  
+  .leaderboard-list-item:not(:last-child) {
+    margin-bottom: 0.5rem;
+  }
+  
+  .leaderboard-list-item.current-user {
+    background-color: #DFF4FF;
+    border: 1px solid #B9E7FF;
+  }
+  
+  .leaderboard-list-item-rank {
+    font-weight: 700;
+    color: #003B73;
+    opacity: 0.6;
+    width: 3rem;
+  }
+  
+  .leaderboard-list-item-user {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .leaderboard-list-item-xp {
+    font-weight: 600;
+    color: #003B73;
+  }
+  
+  /* Custom Scrollbar */
+  .leaderboard-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .leaderboard-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  .leaderboard-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+  }
+  
+  .leaderboard-list::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+  }
+  

@@ -18,6 +18,8 @@ from .views import (
     UserAnalyticsView, RecentActivityView, UserPerformanceView,
     # Achievements
     AchievementListView, UserAchievementsView,
+    # Leaderboard
+    LeaderboardView,
 )
 
 urlpatterns = [
@@ -62,5 +64,8 @@ urlpatterns = [
     # Achievement endpoints
     path('achievements/', AchievementListView.as_view(), name='achievement-list'),
     path('user/achievements/', UserAchievementsView.as_view(), name='user-achievements'),
+    
+    # Leaderboard endpoint
+    path('leaderboard/', LeaderboardView.as_view(), name='leaderboard'),
 ]
 

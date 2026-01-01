@@ -37,6 +37,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import Leaderboard from './Leaderboard';
+import './Leaderboard.css';
 
 
 ChartJS.register(ArcElement, ChartJsTooltip, ChartJsLegend, CategoryScale, LinearScale, BarElement, Title, ChartDataLabels);
@@ -87,6 +89,9 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
   const [overallMetrics, setOverallMetrics] = useState<{ average: number, highest: number } | null>(null);
   const [quizzesByCategoryPieData, setQuizzesByCategoryPieData] = useState<PerformanceChartData | null>(null);
   const [categoryBarData, setCategoryBarData] = useState<PerformanceChartData | null>(null);
+  const [isLeaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   
 
   const handleLogoutClick = () => {
@@ -118,35 +123,49 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
     const fetchUserData = async () => {
       try {
         setIsLoading(true);
-        const [profile, history, activity] = await Promise.all([
+        const [profile, history, activity, leaderboard] = await Promise.all([
           userAPI.getProfile(),
-          quizAPI.getQuizHistory().catch(() => []),
-          userAPI.getRecentActivity().catch(() => []),
+          quizAPI.getQuizHistory().catch((err) => { console.error('Failed to fetch quiz history:', err); return []; }),
+          userAPI.getRecentActivity().catch((err) => { console.error('Failed to fetch recent activity:', err); return []; }),
+          userAPI.getLeaderboard().catch((err) => { console.error('Failed to fetch leaderboard:', err); return []; }),
         ]);
-        
-        setUserData({
-          name: profile.user?.username || getStoredUsername() || 'User',
-          email: profile.user?.email || 'user@example.com',
-          joinDate: new Date(profile.user?.date_joined || Date.now()).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-          avatar: profile.user?.username?.substring(0, 2).toUpperCase() || 'U',
-          level: profile.level || 1,
-          xp: profile.xp || 0,
-          xpToNextLevel: profile.xp_to_next_level || 100,
-          streak: profile.current_streak || 0,
-          longestStreak: profile.longest_streak || 0,
-          last_quiz_date: profile.last_quiz_date,
-          totalQuizzes: profile.total_quizzes_taken || 0,
-          quizzesCreated: profile.total_quizzes_created || 0,
-          quizzesTaken: profile.total_quizzes_taken || 0,
-          averageScore: profile.average_score || 0,
-          totalBadges: profile.total_achievements || 0,
-          rank: 'Top ' + (profile.percentile || 50) + '%',
-        });
+
+        if (profile) {
+          let currentUserRank = 0;
+          if (leaderboard && leaderboard.length > 0) {
+            currentUserRank = leaderboard.findIndex((u: any) => u.username === profile.username) + 1;
+          }
+
+          setUserData({
+            id: profile.id,
+            name: profile.username || getStoredUsername() || 'User',
+            email: profile.email || 'user@example.com',
+            joinDate: new Date(profile.created_at || Date.now()).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+            avatar: profile.username?.substring(0, 2).toUpperCase() || 'U',
+            level: profile.level || 1,
+            xp: profile.xp || 0,
+            xpToNextLevel: profile.xp_to_next_level || 100,
+            streak: profile.current_streak || 0,
+            longestStreak: profile.longest_streak || 0,
+            last_quiz_date: profile.last_quiz_date,
+            totalQuizzes: profile.total_quizzes_taken || 0,
+            quizzesCreated: profile.total_quizzes_created || 0,
+            quizzesTaken: profile.total_quizzes_taken || 0,
+            averageScore: profile.average_score || 0,
+            totalBadges: profile.total_achievements || 0,
+            rank: currentUserRank,
+          });
+
+          const currentUserFromProfile = { id: profile.id, username: profile.username, total_xp: profile.xp };
+          setCurrentUser(currentUserFromProfile);
+        }
         
         setQuizHistory(history);
         setRecentActivity(activity);
-
+        setLeaderboardData(leaderboard);
+        
       } catch (err: any) {
+        console.error('Failed to load profile data:', err);
         setError(err.message || 'Failed to load profile');
         setUserData({
           name: getStoredUsername() || 'User',
@@ -163,7 +182,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
           quizzesTaken: 0,
           averageScore: 0,
           totalBadges: 0,
-          rank: 'New User',
+          rank: 0,
         });
       } finally {
         setIsLoading(false);
@@ -558,11 +577,25 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
             </div>
 
             {/* Rank Badge */}
-            <div className="text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-2xl mb-2">
-                <Crown className="w-12 h-12 text-white" />
+            <div className="text-center cursor-pointer" onClick={() => setLeaderboardOpen(true)}>
+              <div className={`w-24 h-24 rounded-2xl flex items-center justify-center shadow-2xl mb-2 ${
+                userData.rank === 1 ? 'bg-gradient-to-br from-yellow-400 to-amber-500' :
+                userData.rank === 2 ? 'bg-gradient-to-br from-slate-300 to-slate-400' :
+                userData.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-yellow-600' :
+                'bg-gradient-to-br from-blue-400 to-indigo-500'
+              }`}>
+                {userData.rank > 0 && userData.rank <= 3 ? (
+                  <Crown className="w-12 h-12 text-white" />
+                ) : (
+                  <span className="text-white text-3xl font-bold">#{userData.rank}</span>
+                )}
               </div>
-              <p className="text-[#003B73] text-lg font-semibold">{userData.rank}</p>
+              <p className="text-[#003B73] text-lg font-semibold">
+                {userData.rank === 1 ? 'Gold Rank' :
+                 userData.rank === 2 ? 'Silver Rank' :
+                 userData.rank === 3 ? 'Bronze Rank' :
+                 `Rank #${userData.rank}`}
+              </p>
               <p className="text-[#003B73]/60">Global Rank</p>
             </div>
           </div>
@@ -587,6 +620,13 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
             <p className="text-[#003B73]/60 mt-1">{userData.xpToNextLevel - userData.xp} XP to Level {userData.level + 1}</p>
           </div>
         </motion.div>
+
+        <Leaderboard 
+          isOpen={isLeaderboardOpen}
+          onClose={() => setLeaderboardOpen(false)}
+          leaderboardData={leaderboardData}
+          currentUser={currentUser}
+        />
 
         {/* Tabs */}
         <div className="flex gap-4 mb-8">

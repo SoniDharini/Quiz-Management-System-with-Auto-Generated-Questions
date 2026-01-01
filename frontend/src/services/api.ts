@@ -96,6 +96,14 @@ export const userAPI = {
     });
     if (!response.ok) throw new Error('Failed to fetch user performance');
     return response.json();
+  },
+
+  getLeaderboard: async () => {
+    const response = await fetch(`${API_BASE_URL}/leaderboard/`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch leaderboard');
+    return response.json();
   }
 };
 

@@ -1175,3 +1175,19 @@ class UserAchievementsView(APIView):
         user_achievements = UserAchievement.objects.filter(user=request.user)
         serializer = UserAchievementSerializer(user_achievements, many=True)
         return Response(serializer.data)
+
+class LeaderboardView(APIView):
+    """Get leaderboard data"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profiles = UserProfile.objects.order_by('-level', '-xp')
+        data = []
+        for profile in profiles:
+            data.append({
+                'id': profile.user.id,
+                'username': profile.user.username,
+                'total_xp': profile.xp,
+                'level': profile.level,
+            })
+        return Response(data)
