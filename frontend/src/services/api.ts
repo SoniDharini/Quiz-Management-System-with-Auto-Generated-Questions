@@ -88,6 +88,14 @@ export const userAPI = {
     });
     if (!response.ok) throw new Error('Failed to fetch recent activity');
     return response.json();
+  },
+
+  getUserPerformance: async () => {
+    const response = await fetch(`${API_BASE_URL}/user/performance/`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch user performance');
+    return response.json();
   }
 };
 

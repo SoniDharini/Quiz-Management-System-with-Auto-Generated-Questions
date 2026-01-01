@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   ArrowLeft,
@@ -24,12 +24,51 @@ import {
   Loader2,
   Flame
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { userAPI, quizAPI, getStoredUsername } from '../services/api';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Chart as ChartJS, ArcElement, Tooltip as ChartJsTooltip, Legend as ChartJsLegend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { Pie, Bar as BarJS } from 'react-chartjs-2';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+
+ChartJS.register(ArcElement, ChartJsTooltip, ChartJsLegend, CategoryScale, LinearScale, BarElement, Title, ChartDataLabels);
 
 interface ProfilePageProps {
   onBack: () => void;
   onLogout: () => void;
+}
+
+// Define interfaces for better type safety
+interface QuizAttempt {
+  id: number;
+  quiz: number;
+  quiz_title: string;
+  score: number;
+  total_questions: number;
+  correct_answers: number;
+  incorrect_answers: number;
+  score_percentage: number;
+  completed_at: string; // Assuming ISO string format
+}
+
+interface PerformanceChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor: string | string[];
+    borderColor?: string | string[];
+    borderWidth?: number;
+    yAxisID?: string;
+  }[];
 }
 
 export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
@@ -39,9 +78,16 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
   const [showStreakModal, setShowStreakModal] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [userData, setUserData] = useState<any>(null);
-  const [quizHistory, setQuizHistory] = useState<any[]>([]);
+  const [quizHistory, setQuizHistory] = useState<QuizAttempt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+
+  // Derived state for performance charts
+  const [overallMetrics, setOverallMetrics] = useState<{ average: number, highest: number } | null>(null);
+  const [quizzesByCategoryPieData, setQuizzesByCategoryPieData] = useState<PerformanceChartData | null>(null);
+  const [categoryBarData, setCategoryBarData] = useState<PerformanceChartData | null>(null);
+  
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -68,8 +114,6 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
     }
   };
 
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
-
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -77,7 +121,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
         const [profile, history, activity] = await Promise.all([
           userAPI.getProfile(),
           quizAPI.getQuizHistory().catch(() => []),
-          userAPI.getRecentActivity().catch(() => [])
+          userAPI.getRecentActivity().catch(() => []),
         ]);
         
         setUserData({
@@ -99,11 +143,11 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
           rank: 'Top ' + (profile.percentile || 50) + '%',
         });
         
-        setQuizHistory(history.slice(0, 5));
+        setQuizHistory(history);
         setRecentActivity(activity);
+
       } catch (err: any) {
         setError(err.message || 'Failed to load profile');
-        // Set default data if fetch fails
         setUserData({
           name: getStoredUsername() || 'User',
           email: 'user@example.com',
@@ -129,6 +173,97 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
     fetchUserData();
   }, []);
 
+  // Process quiz history to generate performance data
+  useEffect(() => {
+    if (!quizHistory || quizHistory.length === 0) {
+      setOverallMetrics(null);
+      setQuizzesByCategoryPieData(null);
+      setCategoryBarData(null);
+      return;
+    }
+
+    const completedQuizzes = quizHistory.filter(attempt => attempt.completed_at);
+
+    if (completedQuizzes.length === 0) {
+      setOverallMetrics(null);
+      setQuizzesByCategoryPieData(null);
+      setCategoryBarData(null);
+      return;
+    }
+
+    // --- Overall Performance Metrics ---
+    const allScores = completedQuizzes.map(q => q.score_percentage);
+    const averageScore = allScores.reduce((sum, score) => sum + score, 0) / allScores.length;
+    const highestScore = Math.max(...allScores);
+
+    setOverallMetrics({ average: averageScore, highest: highestScore });
+
+    // --- Quizzes Played by Category Pie Chart ---
+    const quizzesByCategory: { [key: string]: number } = {};
+    completedQuizzes.forEach(attempt => {
+      const category = attempt.quiz_title.split(' ')[0] || 'General';
+      quizzesByCategory[category] = (quizzesByCategory[category] || 0) + 1;
+    });
+
+    const categoryLabelsForPie = Object.keys(quizzesByCategory);
+    const categoryQuizCounts = categoryLabelsForPie.map(cat => quizzesByCategory[cat]);
+
+    setQuizzesByCategoryPieData({
+      labels: categoryLabelsForPie,
+      datasets: [{
+        label: 'Quizzes Played',
+        data: categoryQuizCounts,
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.6)',
+          'rgba(54, 162, 235, 0.6)',
+          'rgba(255, 206, 86, 0.6)',
+          'rgba(75, 192, 192, 0.6)',
+          'rgba(153, 102, 255, 0.6)',
+          'rgba(255, 159, 64, 0.6)',
+        ],
+        borderWidth: 1,
+      }],
+    });
+
+    // --- Per-Category Performance (Bar Chart) ---
+    const categoryPerformance: { [key: string]: { scores: number[], count: number } } = {};
+    completedQuizzes.forEach(attempt => {
+      const category = attempt.quiz_title.split(' ')[0] || 'General';
+      if (!categoryPerformance[category]) {
+        categoryPerformance[category] = { scores: [], count: 0 };
+      }
+      categoryPerformance[category].scores.push(attempt.score_percentage);
+      categoryPerformance[category].count++;
+    });
+
+    const categoryLabelsForBar = Object.keys(categoryPerformance);
+    const barChartData = {
+      labels: categoryLabelsForBar,
+      datasets: [
+        {
+          label: 'Average Score (%)',
+          data: categoryLabelsForBar.map(cat => categoryPerformance[cat].scores.reduce((a, b) => a + b, 0) / categoryPerformance[cat].count),
+          backgroundColor: 'rgba(54, 162, 235, 0.6)',
+          yAxisID: 'y-axis-scores',
+        },
+        {
+          label: 'Highest Score (%)',
+          data: categoryLabelsForBar.map(cat => Math.max(...categoryPerformance[cat].scores)),
+          backgroundColor: 'rgba(75, 192, 192, 0.6)',
+          yAxisID: 'y-axis-scores',
+        },
+        {
+          label: 'Quizzes Taken',
+          data: categoryLabelsForBar.map(cat => categoryPerformance[cat].count),
+          backgroundColor: 'rgba(255, 206, 86, 0.6)',
+          yAxisID: 'y-axis-count',
+        }
+      ]
+    };
+    setCategoryBarData(barChartData);
+
+  }, [quizHistory]);
+
   const achievements = [
     { id: 1, title: 'First Steps', description: 'Complete your first quiz', icon: Award, color: 'from-blue-400 to-blue-600', unlocked: true },
     { id: 2, title: 'Week Warrior', description: '7-day streak', icon: Target, color: 'from-orange-400 to-orange-600', unlocked: true },
@@ -139,25 +274,6 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
     { id: 7, title: 'Consistent Learner', description: '30-day streak', icon: Trophy, color: 'from-indigo-400 to-indigo-600', unlocked: false },
     { id: 8, title: 'Champion', description: 'Reach level 10', icon: Trophy, color: 'from-pink-400 to-pink-600', unlocked: false },
   ];
-
-  const performanceData = [
-    { category: 'JavaScript', quizzes: 12, avgScore: 89, bestScore: 98 },
-    { category: 'React', quizzes: 8, avgScore: 92, bestScore: 100 },
-    { category: 'CSS', quizzes: 10, avgScore: 85, bestScore: 94 },
-    { category: 'Python', quizzes: 5, avgScore: 88, bestScore: 95 },
-    { category: 'General', quizzes: 12, avgScore: 84, bestScore: 91 },
-  ];
-
-  // Pie chart data for quiz distribution
-  const pieChartData = [
-    { name: 'JavaScript', value: 12, color: '#3B82F6' },
-    { name: 'React', value: 8, color: '#8B5CF6' },
-    { name: 'CSS', value: 10, color: '#06B6D4' },
-    { name: 'Python', value: 5, color: '#10B981' },
-    { name: 'General', value: 12, color: '#F59E0B' },
-  ];
-
-  const COLORS = ['#3B82F6', '#8B5CF6', '#06B6D4', '#10B981', '#F59E0B'];
 
   // Show loading state
   if (isLoading || !userData) {
@@ -641,235 +757,88 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            {/* Summary Stats - Avg and Highest Score */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <motion.div
-                className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-[#003B73]/10"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center">
-                    <BarChart3 className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-[#003B73] text-2xl">Average Score</h3>
-                    <p className="text-[#003B73]/60">Across all quizzes</p>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.3, type: 'spring' }}
-                    className="text-6xl text-[#003B73] mb-2"
-                  >
-                    {userData.averageScore}%
-                  </motion.div>
-                  <div className="w-full bg-[#DFF4FF]/50 rounded-full h-4 overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-blue-400 to-blue-600"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${userData.averageScore}%` }}
-                      transition={{ duration: 1, delay: 0.5 }}
-                    />
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-[#003B73]/10"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center">
-                    <Trophy className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-[#003B73] text-2xl">Highest Score</h3>
-                    <p className="text-[#003B73]/60">Your best performance</p>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.4, type: 'spring' }}
-                    className="text-6xl text-[#003B73] mb-2"
-                  >
-                    98%
-                  </motion.div>
-                  <div className="w-full bg-[#DFF4FF]/50 rounded-full h-4 overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-green-400 to-green-600"
-                      initial={{ width: 0 }}
-                      animate={{ width: '98%' }}
-                      transition={{ duration: 1, delay: 0.6 }}
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Performance by Category */}
-            <motion.div
-              className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10 p-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="flex items-center gap-3 mb-8">
-                <BarChart3 className="w-8 h-8 text-[#003B73]" />
-                <h2 className="text-[#003B73]">Performance by Category</h2>
+            {(!quizzesByCategoryPieData && !categoryBarData) ? (
+              <div className="text-center text-[#003B73]/70 bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10 p-12">
+                <BarChart3 className="w-16 h-16 mx-auto text-[#003B73]/30 mb-4" />
+                <h3 className="text-xl font-semibold text-[#003B73] mb-2">No Performance Data Available</h3>
+                <p>It looks like you haven&apos;t completed any quizzes yet. Take a quiz to see your performance stats here!</p>
               </div>
-
-              <div className="space-y-6">
-                {performanceData.map((item, index) => (
-                  <motion.div
-                    key={item.category}
-                    className="p-6 bg-gradient-to-r from-[#DFF4FF]/30 to-white rounded-2xl border border-[#003B73]/10"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + index * 0.1 }}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-[#003B73]">{item.category}</h3>
-                      <span className="text-[#003B73]/60">{item.quizzes} quizzes</span>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-[#003B73]/60 mb-2">Average Score</p>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 bg-white rounded-full h-3 overflow-hidden border border-[#003B73]/10">
-                            <motion.div
-                              className="h-full bg-gradient-to-r from-[#003B73] to-[#0056A8]"
-                              initial={{ width: 0 }}
-                              animate={{ width: `${item.avgScore}%` }}
-                              transition={{ duration: 1, delay: 0.5 + index * 0.1 }}
-                            />
-                          </div>
-                          <span className="text-[#003B73] min-w-[3rem]">{item.avgScore}%</span>
+            ) : (
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <Card className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10">
+                    <CardHeader>
+                      <CardTitle className="text-[#003B73] text-2xl">Quizzes Played by Category</CardTitle>
+                      <p className="text-[#003B73]/70">Distribution of quizzes completed</p>
+                    </CardHeader>
+                    <CardContent className="h-[300px] w-full flex items-center justify-center">
+                      {quizzesByCategoryPieData && (
+                        <div className="w-full max-w-xs">
+                          <Pie
+                            data={quizzesByCategoryPieData}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: { legend: { position: 'top' } }
+                            }}
+                          />
                         </div>
-                      </div>
-
-                      <div>
-                        <p className="text-[#003B73]/60 mb-2">Best Score</p>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 bg-white rounded-full h-3 overflow-hidden border border-[#003B73]/10">
-                            <motion.div
-                              className="h-full bg-gradient-to-r from-green-400 to-green-600"
-                              initial={{ width: 0 }}
-                              animate={{ width: `${item.bestScore}%` }}
-                              transition={{ duration: 1, delay: 0.6 + index * 0.1 }}
-                            />
-                          </div>
-                          <span className="text-[#003B73] min-w-[3rem]">{item.bestScore}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}</div>
-            </motion.div>
-
-            {/* Pie Chart - Quiz Distribution */}
-            <motion.div
-              className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10 p-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-            >
-              <div className="flex items-center gap-3 mb-8">
-                <Target className="w-8 h-8 text-[#003B73]" />
-                <h2 className="text-[#003B73]">Quiz Distribution by Category</h2>
-              </div>
-
-              <div className="h-96">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={120}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {pieChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Legend with detailed info */}
-              <div className="grid md:grid-cols-5 gap-4 mt-6">
-                {pieChartData.map((item, index) => (
-                  <motion.div
-                    key={item.name}
-                    className="p-4 bg-gradient-to-r from-[#DFF4FF]/30 to-white rounded-2xl border border-[#003B73]/10 text-center"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8 + index * 0.05 }}
-                  >
-                    <div
-                      className="w-8 h-8 rounded-lg mx-auto mb-2"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <h4 className="text-[#003B73]">{item.name}</h4>
-                    <p className="text-[#003B73]/60">{item.value} quizzes</p>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Summary Stats */}
-            <div className="grid md:grid-cols-3 gap-6">
-              <motion.div
-                className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-[#003B73]/10 text-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-              >
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <Target className="w-8 h-8 text-white" />
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Card className="flex flex-col justify-center items-center bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10 p-6">
+                    <CardTitle className="text-[#003B73]/70 mb-2 text-lg">Average Score</CardTitle>
+                    <p className="text-4xl font-bold text-[#003B73]">{overallMetrics?.average.toFixed(1)}%</p>
+                  </Card>
+                  <Card className="flex flex-col justify-center items-center bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10 p-6">
+                    <CardTitle className="text-[#003B73]/70 mb-2 text-lg">Highest Score</CardTitle>
+                    <p className="text-4xl font-bold text-[#003B73]">{overallMetrics?.highest.toFixed(1)}%</p>
+                  </Card>
                 </div>
-                <h3 className="text-[#003B73]">{userData.quizzesTaken}</h3>
-                <p className="text-[#003B73]/70">Quizzes Taken</p>
-              </motion.div>
-              <motion.div
-                className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-[#003B73]/10 text-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 }}
-              >
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <Brain className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-[#003B73]">{userData.quizzesCreated}</h3>
-                <p className="text-[#003B73]/70">Quizzes Created</p>
-              </motion.div>
-              <motion.div
-                className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-[#003B73]/10 text-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.0 }}
-              >
-                <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <TrendingUp className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-[#003B73]">{userData.averageScore}%</h3>
-                <p className="text-[#003B73]/70">Overall Average</p>
-              </motion.div>
-            </div>
+
+                {categoryBarData && (
+                  <Card className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10">
+                    <CardHeader>
+                      <CardTitle className="text-[#003B73] text-2xl">Performance by Category</CardTitle>
+                       <p className="text-[#003B73]/70">Summary of all completed quizzes</p>
+                    </CardHeader>
+                    <CardContent className="h-[400px] w-full">
+                       <BarJS
+                        data={categoryBarData}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          scales: {
+                            'y-axis-scores': {
+                              type: 'linear',
+                              position: 'left',
+                              beginAtZero: true,
+                              max: 100,
+                              title: {
+                                display: true,
+                                text: 'Score (%)'
+                              }
+                            },
+                            'y-axis-count': {
+                              type: 'linear',
+                              position: 'right',
+                              beginAtZero: true,
+                              title: {
+                                display: true,
+                                text: 'Quizzes Taken'
+                              },
+                              grid: {
+                                drawOnChartArea: false, // only draw grid lines for the first Y axis
+                              },
+                            }
+                          }
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
 

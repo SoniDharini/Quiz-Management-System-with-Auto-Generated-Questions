@@ -997,6 +997,95 @@ class UserAnalyticsView(APIView):
         serializer = QuizAnalyticsSerializer(analytics)
         return Response(serializer.data)
 
+class UserPerformanceView(APIView):
+    """Get user performance data"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        profile = user.profile
+        analytics, created = QuizAnalytics.objects.get_or_create(user=user)
+
+        total_quizzes_attempted = QuizAttempt.objects.filter(user=user).count()
+        total_quizzes_completed = QuizAttempt.objects.filter(user=user, status='completed').count()
+        
+        total_correct_answers = analytics.total_correct_answers
+        total_questions_answered = analytics.total_questions_answered
+        total_incorrect_answers = total_questions_answered - total_correct_answers
+        
+        accuracy = (total_correct_answers / total_questions_answered * 100) if total_questions_answered > 0 else 0
+
+        # Category-wise performance for the most recent quiz in each specified category
+        categories_to_check = ["Academics", "Computer Engineering", "Government Exams"]
+        category_performance_list = []
+        
+        for cat_name in categories_to_check:
+            last_attempt_in_cat = QuizAttempt.objects.filter(
+                user=user, 
+                status='completed', 
+                quiz__category__name=cat_name
+            ).order_by('-completed_at').first()
+            
+            if last_attempt_in_cat:
+                category_performance_list.append({
+                    'category': cat_name,
+                    'average_score': last_attempt_in_cat.score_percentage
+                })
+
+        category_wise_performance = {
+            'most_recent_quiz': {
+                'quiz_title': 'Most Recent Quizzes by Category',
+                'categories': category_performance_list
+            }
+        } if category_performance_list else None
+
+
+        # Subject-wise performance based on the category of the last quiz
+        last_attempt = QuizAttempt.objects.filter(user=user, status='completed').order_by('-completed_at').first()
+        subject_wise_performance = None
+
+        if last_attempt:
+            last_quiz_category = last_attempt.quiz.category
+            subjects_in_category = Subject.objects.filter(level__category=last_quiz_category)
+            
+            subject_performance_list = []
+            for subject in subjects_in_category:
+                last_attempt_for_subject = QuizAttempt.objects.filter(
+                    user=user,
+                    status='completed',
+                    quiz__subject=subject
+                ).order_by('-completed_at').first()
+
+                if last_attempt_for_subject:
+                    subject_performance_list.append({
+                        'subject': subject.name,
+                        'score': last_attempt_for_subject.score_percentage
+                    })
+
+            subject_wise_performance = {
+                'most_recent_quiz': {
+                    'quiz_title': f'Performance in {last_quiz_category.name}',
+                    'subjects': subject_performance_list
+                }
+            }
+
+
+        data = {
+            'overall': {
+                'total_quizzes_attempted': total_quizzes_attempted,
+                'total_quizzes_completed': total_quizzes_completed,
+                'total_correct_answers': total_correct_answers,
+                'total_incorrect_answers': total_incorrect_answers,
+                'accuracy': accuracy,
+                'average_score': profile.average_score,
+                'highest_score': QuizAttempt.objects.filter(user=user, status='completed').aggregate(Avg('score_percentage'))['score_percentage__avg'] or 0,
+            },
+            'category_wise_performance': category_wise_performance,
+            'subject_wise_performance': subject_wise_performance
+        }
+        return Response(data)
+
+
 class RecentActivityView(APIView):
     """Get recent user activity"""
     permission_classes = [IsAuthenticated]

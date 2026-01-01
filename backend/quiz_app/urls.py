@@ -15,7 +15,7 @@ from .views import (
     # Quiz Attempts
     QuizStartView, QuizSubmitView, QuizAttemptDetailView, UserQuizHistoryView,
     # Analytics
-    UserAnalyticsView, RecentActivityView,
+    UserAnalyticsView, RecentActivityView, UserPerformanceView,
     # Achievements
     AchievementListView, UserAchievementsView,
 )
@@ -57,6 +57,7 @@ urlpatterns = [
     # Analytics endpoints
     path('user/analytics/', UserAnalyticsView.as_view(), name='user-analytics'),
     path('user/activity/', RecentActivityView.as_view(), name='recent-activity'),
+    path('user/performance/', UserPerformanceView.as_view(), name='user-performance'),
     
     # Achievement endpoints
     path('achievements/', AchievementListView.as_view(), name='achievement-list'),
