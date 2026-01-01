@@ -542,6 +542,8 @@ class QuizGenerateView(APIView):
             subject_id = request.data.get('subject_id')
             difficulty = request.data.get('difficulty', 'medium')
             num_questions = int(request.data.get('num_questions', 10))
+            if num_questions > 100:
+                num_questions = 100
             custom_title = request.data.get('title', '')
             
             if not subject_id:
@@ -693,6 +695,8 @@ class QuizGenerateFromFileView(APIView):
         file = request.FILES.get('file')
         title = request.data.get('title', 'Untitled Quiz')
         num_questions = int(request.data.get('num_questions', 10))
+        if num_questions > 100:
+            num_questions = 100
         difficulty = request.data.get('difficulty', 'medium')
         category_id = request.data.get('category_id')
         level_id = request.data.get('level_id')
@@ -885,7 +889,12 @@ class RecommendedQuizzes(APIView):
             return Response(serializer.data)
 
         # 2. Fetch all quizzes and user's recent attempts
-        all_quizzes = list(Quiz.objects.filter(is_published=True).select_related('category'))
+        predefined_categories = ["Academics", "Computer Science", "Government Exams"]
+        all_quizzes = list(Quiz.objects.filter(
+            is_published=True,
+            category__name__in=predefined_categories,
+            is_temporary=False
+        ).select_related('category'))
         attempted_quizzes_map = {attempt.quiz_id: attempt.completed_at for attempt in recent_attempts}
 
         # 3. Score each quiz

@@ -151,7 +151,7 @@ class QuizConfig(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     level = models.ForeignKey(Level, on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    number_of_questions = models.IntegerField(validators=[MinValueValidator(5), MaxValueValidator(50)])
+    number_of_questions = models.IntegerField(validators=[MinValueValidator(5), MaxValueValidator(100)])
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
 

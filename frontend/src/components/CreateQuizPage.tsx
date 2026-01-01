@@ -107,8 +107,8 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
       }
 
       const questionsCount = parseInt(numQuestions);
-      if (isNaN(questionsCount) || questionsCount < 5 || questionsCount > 30) {
-        setError('Please enter a valid number of questions (5-30)');
+      if (isNaN(questionsCount) || questionsCount < 1 || questionsCount > 100) {
+        setError('Please enter a valid number of questions (1-100)');
         return;
       }
 
@@ -352,23 +352,23 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
                 {/* Number of Questions */}
                 <div>
                   <label className="block text-[#003B73] mb-2">
-                    Number of Questions (5-30)
+                    Number of Questions (1-100)
                   </label>
                   <input
                     type="number"
-                    min="5"
-                    max="30"
+                    min="1"
+                    max="100"
                     value={numQuestions}
                     onChange={(e) => {
                       const val = e.target.value;
-                      if (val === '' || (parseInt(val) >= 5 && parseInt(val) <= 30)) {
+                      if (val === '' || (parseInt(val) >= 1 && parseInt(val) <= 100)) {
                         setNumQuestions(val);
                       }
                     }}
                     placeholder="Enter number of questions"
                     className="w-full px-4 py-3.5 bg-gradient-to-r from-[#DFF4FF]/50 to-white border border-[#003B73]/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#003B73]/20 focus:border-[#003B73]/30 transition-all"
                   />
-                  <p className="text-[#003B73]/60 mt-2">Enter a number between 5 and 30</p>
+                  <p className="text-[#003B73]/60 mt-2">Enter a number between 1 and 100</p>
                 </div>
 
                 {/* Difficulty Level */}
