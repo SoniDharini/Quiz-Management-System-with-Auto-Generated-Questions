@@ -341,11 +341,179 @@ class QuizConfigView(APIView):
 # ... (imports)
 
 # Define topic constraints for Class 10 Mathematics
-TOPIC_CONSTRAINTS = {
-    'mathematics_10th': {
-        'easy': ['Real Numbers', 'Polynomials', 'Pair of Linear Equations in Two Variables', 'Arithmetic Progressions'],
-        'medium': ['Triangles', 'Coordinate Geometry', 'Introduction to Trigonometry', 'Quadratic Equations'],
-        'hard': ['Some Applications of Trigonometry', 'Circles', 'Constructions', 'Areas Related to Circles', 'Surface Areas and Volumes', 'Statistics', 'Probability']
+TOPIC_MAP = {
+    "Academics": {
+        "10th Grade": {
+            "Mathematics": {
+                "easy": [
+                    "Real Numbers: Euclid Division Lemma basics",
+                    "Real Numbers: HCF and LCM, Terminating decimals",
+                    "Polynomials: Factorization, Zeros of quadratic polynomials",
+                    "Polynomials: Basic identity relations",
+                    "Linear Equations: Graphical solutions, Substitution & elimination methods",
+                    "Quadratic Equations: Factorization, Middle term splitting",
+                    "Arithmetic Progressions: nth term, Sum of first n terms",
+                    "Geometry: Basic Proportionality Theorem, Similarity, Basic angle properties",
+                    "Coordinate Geometry: Distance formula, Midpoint formula",
+                    "Trigonometry: Trigonometric ratios (0°–90°), Identity proofs",
+                    "Circles: Tangent theorem, Properties of tangents",
+                    "Statistics: Mean of ungrouped data, Frequency distribution (basic)",
+                    "Linear Equations: Substitution method (easy)",
+                    "Coordinate Geometry: Midpoint and section formula",
+                    "Triangles: Area of triangle using coordinates",
+                    "Coordinate Geometry: Slope of line and equations of lines",
+                    "Surface Areas & Volumes: Cylinder/Cone/Sphere (direct problems)",
+                    "Trigonometry: Values of sin, cos, tan for specific angles",
+                    "Surface Areas & Volumes: Volume of cylinder and cone",
+                    "Probability: Simple probability problems with dice/coin"
+                ],
+                "medium": [
+                    "Real Numbers: Fundamental Theorem of Arithmetic, HCF/LCM via prime factorization",
+                    "Polynomials: Polynomial division, Factor theorem, Word problems",
+                    "Linear Equations: Consistency cases, Cross-multiplication method",
+                    "Quadratic Equations: Word problems, Discriminant analysis",
+                    "Arithmetic Progressions: Word problems, Sum of n terms in a given sequence",
+                    "Geometry: Proof of similarity, Advanced BPT applications",
+                    "Coordinate Geometry: Area of triangle using coordinates, Section formula",
+                    "Trigonometry: Trigonometric identities, Equations with multiple steps",
+                    "Circles: Secants and tangents, Angle properties in circles",
+                    "Statistics: Median and Mode, Cumulative frequency",
+                    "Coordinate Geometry: Finding the equation of a line",
+                    "Linear Equations: Word problems with money/speed/age",
+                    "Surface Areas & Volumes: Combination of solids, mixed TSA/volume",
+                    "Trigonometry: Prove identities with multiple terms",
+                    "Triangles: Advanced similarity problems",
+                    "Probability: Conditional probability, Random variable problems",
+                    "Coordinate Geometry: Equation of straight lines",
+                    "Polynomials: Advanced factorization problems",
+                    "Surface Areas & Volumes: Volume of frustum",
+                    "Statistics: Variance and standard deviation"
+                ],
+                "hard": [
+                    "Real Numbers: Proof of irrationality using Euclid’s algorithm",
+                    "Polynomials: Advanced factorization, Polynomial equations with parameters",
+                    "Linear Equations: Complex word problems with constraints, Advanced consistency",
+                    "Quadratic Equations: Advanced parameter-based problems, Roots and nature of roots",
+                    "Arithmetic Progressions: Mixed problems with conditions",
+                    "Geometry: Full similarity proof problems, Pythagoras converse",
+                    "Coordinate Geometry: Coordinate geometry with proofs, Area and section formula",
+                    "Trigonometry: Complex identities, Solving trigonometric equations",
+                    "Circles: Proofs related to angles in cyclic quadrilaterals, Tangent-secant theorem",
+                    "Statistics: Box plot construction, Combined mean/median/mode problems",
+                    "Probability: Multi-step counting, tricky sample space problems",
+                    "Surface Areas & Volumes: Recasting/melting combined solids",
+                    "Coordinate Geometry: Finding area of triangle from coordinates",
+                    "Polynomials: Long division, Parameterized polynomials",
+                    "Linear Equations: Systems of equations with inequalities",
+                    "Statistics: Advanced regression problems",
+                    "Surface Areas & Volumes: Volume of frustum and complex solids",
+                    "Trigonometry: Solving for multiple unknowns in identity proofs",
+                    "Circles: Angle between two tangents from external point",
+                    "Coordinate Geometry: Proofs with locus of points"
+                ]
+            }
+        },
+        "12th Grade": {
+            "Mathematics": {
+                "easy": [
+                    "Differentiation: Basic derivatives (power rule, product rule)",
+                    "Matrices: Determinants, Basic operations",
+                    "Vectors: Addition, Subtraction, Scalar multiplication",
+                    "Probability: Simple events, Conditional probability",
+                    "Differential Equations: First-order linear equations",
+                    "Relations and Functions: Domain, Range, Types of functions",
+                    "Permutations & Combinations: Basic counting techniques",
+                    "Trigonometry: Standard angles, Simple identities",
+                    "Coordinate Geometry: Line equation, Circle equation basics",
+                    "Calculus: Limits and continuity"
+                ],
+                "medium": [
+                    "Differentiation: Application of derivatives, Maxima and minima",
+                    "Matrices: Inverse of matrices, Cramer’s Rule",
+                    "Vectors: Dot product, Cross product",
+                    "Probability: Binomial distribution, Poisson distribution",
+                    "Differential Equations: Second-order equations, Applications",
+                    "Relations and Functions: Composition, Inverse of functions",
+                    "Permutations & Combinations: Advanced counting problems",
+                    "Trigonometry: Prove and apply identities, Angle transformations",
+                    "Coordinate Geometry: Conic sections, Hyperbola, Parabola equations",
+                    "Calculus: Integration by parts"
+                ],
+                "hard": [
+                    "Differentiation: Implicit differentiation, Higher-order derivatives",
+                    "Matrices: Eigenvalues, Eigenvectors",
+                    "Vectors: Vector calculus, Applications in 3D geometry",
+                    "Probability: Advanced combinatorial probability, Random variables",
+                    "Differential Equations: Non-homogeneous equations, Complex solutions",
+                    "Relations and Functions: Proofs of inverse relations, Limit applications",
+                    "Permutations & Combinations: Advanced theorems and proofs",
+                    "Trigonometry: Complex identities, Multiple-angle formulas",
+                    "Coordinate Geometry: Parametric equations of conics",
+                    "Calculus: Advanced integration techniques, Improper integrals"
+                ]
+            }
+        }
+    },
+    "Computer Science": {
+        "easy": [
+            "Data Structures: Arrays, Linked Lists",
+            "Algorithms: Sorting algorithms (Bubble, Merge)",
+            "Object-Oriented Programming: Classes and objects",
+            "Operating Systems: Processes, Threads",
+            "Networking: OSI model basics",
+            "SQL: Select queries, Joins",
+            "Python: Variables, Loops, Functions",
+            "Java: Classes and Methods",
+            "C++: Arrays, Functions",
+            "Web Development: HTML, CSS"
+        ],
+        "medium": [
+            "Data Structures: Trees, Heaps, Hashmaps",
+            "Algorithms: Quick Sort, Merge Sort, Binary Search",
+            "Object-Oriented Programming: Inheritance, Polymorphism",
+            "Operating Systems: Memory management, File systems",
+            "Networking: TCP/IP, Routing algorithms",
+            "SQL: Subqueries, Joins, Aggregates",
+            "Python: Libraries (NumPy, Pandas)",
+            "Java: Exception handling, Multithreading",
+            "C++: OOP, Standard Template Library",
+            "Web Development: AJAX, Node.js"
+        ],
+        "hard": [
+            "Data Structures: Graphs, Advanced tree operations",
+            "Algorithms: Dynamic programming, Greedy algorithms",
+            "Object-Oriented Programming: Design patterns",
+            "Operating Systems: Virtual memory, Deadlock prevention",
+            "Networking: Advanced protocols, Network design",
+            "SQL: Normalization, Advanced queries",
+            "Python: Generators, Decorators",
+            "Java: Streams, Lambda functions",
+            "C++: Memory management, Pointers",
+            "Web Development: Full-stack development, React"
+        ]
+    },
+    "Government Exams": {
+        "easy": [
+            "General Knowledge: History basics, Important dates",
+            "Current Affairs: Prime Minister, President",
+            "English: Vocabulary, Synonyms, Antonyms",
+            "Mathematics: Basic arithmetic, Percentage",
+            "General Science: Basic physics, chemistry, biology"
+        ],
+        "medium": [
+            "General Knowledge: Freedom Struggle, Ancient and Medieval India",
+            "Current Affairs: National and international issues",
+            "English: Sentence correction, Error spotting",
+            "General Science: Physics laws, Chemical reactions",
+            "Mathematics: Time and work, Speed, Distance"
+        ],
+        "hard": [
+            "General Knowledge: Indian polity, Indian constitution",
+            "Current Affairs: International relations, Government schemes",
+            "English: Reading comprehension, Idioms/Phrases",
+            "Mathematics: Data interpretation, Advanced algebra",
+            "General Science: Environmental Science, Advanced Physics"
+        ]
     }
 }
 
@@ -386,89 +554,96 @@ class QuizGenerateView(APIView):
             except Subject.DoesNotExist:
                 return Response({'error': 'Subject not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        topic = subject.name
-        # Apply topic constraints for Class 10 Mathematics
-        if subject.name.lower() == 'mathematics' and level.name.lower() == '10th grade':
-            key = 'mathematics_10th'
-            if key in TOPIC_CONSTRAINTS and difficulty in TOPIC_CONSTRAINTS[key]:
-                topic = random.choice(TOPIC_CONSTRAINTS[key][difficulty])
+        topic_list = []
+        try:
+            topic_list = TOPIC_MAP.get(category.name, {}).get(level.name, {}).get(subject.name, {}).get(difficulty, [])
+        except KeyError:
+            pass
+
+        if not topic_list:
+            topic_list = [subject.name]
 
         all_questions_data = []
-        remaining_questions = num_questions
-        batch_size = 10
+        num_topics = len(topic_list)
+        questions_per_topic = num_questions // num_topics
+        extra_questions = num_questions % num_topics
 
-        while remaining_questions > 0:
-            current_batch_size = min(batch_size, remaining_questions)
-            
-            prompt = f"""Generate {current_batch_size} multiple-choice questions for a quiz on {topic} 
-            (Subject: {subject.name}, Category: {category.name}, Level: {level.name}).
-            
-            Difficulty: {difficulty}
-            Standard: Indian curriculum
-            
-            Return ONLY a valid JSON array with this exact structure:
-            [
-                {{
-                    "question": "Question text here?",
-                    "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-                    "correct_answer": 0,
-                    "explanation": "Explanation of the correct answer"
-                }}
-            ]
-            
-            Important:
-            - Each question must have exactly 4 options
-            - correct_answer must be the index (0-3) of the correct option
-            - Make questions relevant to {difficulty} difficulty level
-            - Provide clear explanations
-            """
-            
-            try:
-                max_tokens_per_question = 300
-                calculated_max_tokens = current_batch_size * max_tokens_per_question
-                max_tokens = min(calculated_max_tokens, 4000)
+        for i, topic in enumerate(topic_list):
+            num_to_generate = questions_per_topic + (1 if i < extra_questions else 0)
+            if num_to_generate == 0:
+                continue
 
-                response = get_openai_client().chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are an expert quiz generator. Return only valid JSON arrays."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=max_tokens
-                )
-                
-                ai_content = response.choices[0].message.content.strip()
-                
-                if '```json' in ai_content:
-                    ai_content = ai_content.split('```json')[1]
-                    ai_content = ai_content.split('```')[0]
-                elif ai_content.startswith('```'):
-                    ai_content = ai_content.split('```')[1]
-                
-                start_index = ai_content.find('[')
-                end_index = ai_content.rfind(']')
+            retries = 3
+            while retries > 0:
+                try:
+                    prompt = f"""Generate {num_to_generate} multiple-choice questions for a quiz on the topic '{topic}' 
+                    (Subject: {subject.name}, Category: {category.name}, Level: {level.name}).
 
-                if start_index != -1 and end_index != -1:
-                    ai_content = ai_content[start_index:end_index+1]
-                
-                questions_data = json.loads(ai_content)
-                
-                all_questions_data.extend(questions_data)
-                remaining_questions -= len(questions_data)
+                    Difficulty: {difficulty}
+                    Standard: Indian curriculum
 
-            except Exception as e:
-                import traceback
-                print(f"DEBUG: Exception in quiz generation: {e}")
-                traceback.print_exc()
-                return Response({
-                    'error': 'Failed to generate quiz',
-                    'details': str(e),
-                    'type': type(e).__name__
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    Return ONLY a valid JSON array with this exact structure:
+                    [
+                        {{
+                            "question": "Question text here?",
+                            "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+                            "correct_answer": 0,
+                            "explanation": "Explanation of the correct answer"
+                        }}
+                    ]
+
+                    Important:
+                    - Each question must have exactly 4 options
+                    - correct_answer must be the index (0-3) of the correct option
+                    - Make questions relevant to {difficulty} difficulty level
+                    - Provide clear explanations
+                    """
+                    
+                    max_tokens_per_question = 300
+                    calculated_max_tokens = num_to_generate * max_tokens_per_question
+                    max_tokens = min(calculated_max_tokens, 4000)
+
+                    response = get_openai_client().chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": "You are an expert quiz generator. Return only valid JSON arrays."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.7,
+                        max_tokens=max_tokens
+                    )
+                    
+                    ai_content = response.choices[0].message.content.strip()
+                    
+                    if '```json' in ai_content:
+                        ai_content = ai_content.split('```json')[1]
+                        ai_content = ai_content.split('```')[0]
+                    elif ai_content.startswith('```'):
+                        ai_content = ai_content.split('```')[1]
+                    
+                    start_index = ai_content.find('[')
+                    end_index = ai_content.rfind(']')
+
+                    if start_index != -1 and end_index != -1:
+                        ai_content = ai_content[start_index:end_index+1]
+                    
+                    questions_data = json.loads(ai_content)
+                    all_questions_data.extend(questions_data)
+                    break 
+
+                except Exception as e:
+                    retries -= 1
+                    print(f"DEBUG: Exception in quiz generation for topic '{topic}': {e}. Retries left: {retries}")
+                    if retries == 0:
+                        print(f"Failed to generate questions for topic '{topic}' after multiple retries.")
+                        # Optionally, you could add a placeholder or skip this topic.
+                        # For now, we just log and continue.
+                        pass
+        
+        random.shuffle(all_questions_data)
 
         # Create Quiz
-        quiz_title = custom_title or f"{subject.name} ({topic}) - {difficulty.capitalize()} Quiz"
+        quiz_title = custom_title or f"{subject.name} - {difficulty.capitalize()} Quiz"
         quiz = Quiz.objects.create(
             title=quiz_title,
             category=category,
@@ -481,6 +656,7 @@ class QuizGenerateView(APIView):
             created_by=request.user,
             time_limit=num_questions * 60  # 60 seconds per question
         )
+
         
         # Create Questions
         for idx, q_data in enumerate(all_questions_data):

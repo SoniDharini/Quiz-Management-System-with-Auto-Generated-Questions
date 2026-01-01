@@ -1409,7 +1409,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
               <BarChart3 className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-[#003B73] mb-2">Score</h3>
-            <p className="text-4xl text-[#003B73]">{attempt.score_percentage}%</p>
+            <p className="text-4xl text-[#003B73]">{attempt.formatted_score_percentage}</p>
           </motion.div>
 
           <motion.div

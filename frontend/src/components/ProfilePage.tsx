@@ -57,7 +57,8 @@ interface QuizAttempt {
   total_questions: number;
   correct_answers: number;
   incorrect_answers: number;
-  score_percentage: number;
+  score_percentage: number; // Keep for calculations if needed
+  formatted_score_percentage: string; // New field for display
   completed_at: string; // Assuming ISO string format
 }
 
@@ -211,7 +212,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
     }
 
     // --- Overall Performance Metrics ---
-    const allScores = completedQuizzes.map(q => q.score_percentage);
+    const allScores = completedQuizzes.map(q => parseFloat(q.formatted_score_percentage));
     const averageScore = allScores.reduce((sum, score) => sum + score, 0) / allScores.length;
     const highestScore = Math.max(...allScores);
 

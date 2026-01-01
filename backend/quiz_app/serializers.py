@@ -190,18 +190,22 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
     answers = AnswerSerializer(many=True, read_only=True)
     quiz_title = serializers.CharField(source='quiz.title', read_only=True)
     user_username = serializers.CharField(source='user.username', read_only=True)
+    formatted_score_percentage = serializers.SerializerMethodField()
 
     class Meta:
         model = QuizAttempt
         fields = [
             'id', 'user', 'user_username', 'quiz', 'quiz_title', 'status',
             'started_at', 'completed_at', 'time_taken', 'score', 'total_questions',
-            'correct_answers', 'score_percentage', 'xp_earned', 'answers'
+            'correct_answers', 'xp_earned', 'answers', 'score_percentage', 'formatted_score_percentage'
         ]
         read_only_fields = [
             'user', 'started_at', 'completed_at', 'score', 'correct_answers',
-            'score_percentage', 'xp_earned'
+            'xp_earned'
         ]
+
+    def get_formatted_score_percentage(self, obj):
+        return f"{obj.score_percentage:.1f}%"
 
 class QuizSubmitSerializer(serializers.Serializer):
     """Serializer for quiz submission"""
