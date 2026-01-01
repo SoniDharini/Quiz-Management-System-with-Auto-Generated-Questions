@@ -25,6 +25,7 @@ import {
   Rocket,
   History,
   X,
+  Upload, // Add Upload here
 } from 'lucide-react';
 import { loadQuizState, QuizState, clearQuizState } from '../lib/quizPersistence';
 

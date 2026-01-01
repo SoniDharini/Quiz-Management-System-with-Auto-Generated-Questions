@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { 
   ArrowLeft,
@@ -13,9 +13,11 @@ import {
   Sparkles,
   Book,
   Target,
-  AlertCircle
+  AlertCircle,
+  UploadCloud // Added for FileUploadQuizPage functionality
 } from 'lucide-react';
 import { quizAPI } from '../services/api';
+import { useDropzone } from 'react-dropzone'; // Added for FileUploadQuizPage functionality
 
 interface CreateQuizPageProps {
   onBack: () => void;
@@ -39,6 +41,36 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
   const [error, setError] = useState<string | null>(null);
   const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  // States for file upload from FileUploadQuizPage
+  const [files, setFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    setFiles(acceptedFiles);
+    setFileError(null);
+    setSelectedFile(acceptedFiles[0]); // Set selectedFile for compatibility with existing logic
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'text/plain': ['.txt'],
+    },
+    maxSize: 50 * 1024 * 1024, // 50MB
+    multiple: false,
+    onDropRejected: (fileRejections) => {
+      const rejection = fileRejections[0];
+      if (rejection.errors[0].code === 'file-too-large') {
+        setFileError('File is larger than 50MB');
+      } else {
+        setFileError(rejection.errors[0].message);
+      }
+    }
+  });
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -61,6 +93,7 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
+    setFiles([]); // Clear the files array
   };
 
   const handleContinue = async () => {
@@ -82,6 +115,7 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
       setStep('generating');
       setError(null);
       setIsGenerating(true);
+      setIsUploading(true); // Set uploading state
 
       try {
         const result = await quizAPI.generateQuizFromFile(selectedFile, {
@@ -103,9 +137,11 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
       } catch (err: any) {
         console.error('Quiz generation error:', err);
         setError(err.message || 'Failed to generate quiz. Please try again.');
+        setFileError(err.message || 'Failed to generate quiz from file.'); // Set file-specific error
         setStep('configure');
       } finally {
         setIsGenerating(false);
+        setIsUploading(false); // Reset uploading state
       }
     }
   };
@@ -118,6 +154,8 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
     setDifficulty('medium');
     setError(null);
     setGeneratedQuiz(null);
+    setFiles([]); // Clear files
+    setFileError(null); // Clear file error
   };
 
   return (
@@ -223,62 +261,44 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
                 </div>
                 <h2 className="text-[#003B73] text-2xl mb-2">Upload Your Study Material</h2>
                 <p className="text-[#003B73]/70">
-                  Upload documents, notes, or any learning material to generate a custom quiz
+                  Upload documents, notes, or any learning material and our AI will generate a quiz for you.
+                  <br />
+                  <span className="font-semibold">Note:</span> Quizzes generated this way are for practice and will not affect your profile stats, XP, or rank.
                 </p>
               </div>
 
-              {/* File Upload Area */}
+              {/* File Upload Area - using react-dropzone */}
               <div
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                className="border-2 border-dashed border-[#003B73]/30 rounded-3xl p-12 text-center hover:border-[#003B73]/50 transition-all bg-gradient-to-br from-[#DFF4FF]/20 to-white cursor-pointer"
+                {...getRootProps()}
+                className={`p-12 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
+                  isDragActive ? 'border-[#003B73] bg-[#DFF4FF]' : 'border-[#003B73]/30 hover:border-[#003B73]/50'
+                }`}
               >
-                {!selectedFile ? (
-                  <div>
-                    <Upload className="w-16 h-16 text-[#003B73]/40 mx-auto mb-4" />
-                    <h3 className="text-[#003B73] mb-2">Drag and drop your file here</h3>
-                    <p className="text-[#003B73]/60 mb-4">or</p>
-                    <label className="inline-block">
-                      <input
-                        type="file"
-                        onChange={handleFileUpload}
-                        accept=".pdf,.doc,.docx,.txt"
-                        className="hidden"
-                      />
-                      <span className="px-8 py-3 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer inline-block">
-                        Browse Files
-                      </span>
-                    </label>
-                    <p className="text-[#003B73]/60 mt-4">
-                      Supported formats: PDF, DOC, DOCX, TXT
-                    </p>
-                  </div>
+                <input {...getInputProps()} />
+                <UploadCloud className="w-16 h-16 mx-auto text-[#003B73]/50 mb-4" />
+                {isDragActive ? (
+                  <p className="text-[#003B73]">Drop the files here ...</p>
                 ) : (
-                  <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="flex items-center justify-between p-6 bg-gradient-to-r from-[#DFF4FF] to-white rounded-2xl border border-[#003B73]/20"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-[#003B73] to-[#0056A8] rounded-xl flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="text-left">
-                        <h4 className="text-[#003B73]">{selectedFile.name}</h4>
-                        <p className="text-[#003B73]/60">
-                          {(selectedFile.size / 1024).toFixed(2)} KB
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleRemoveFile}
-                      className="w-10 h-10 bg-red-100 hover:bg-red-200 rounded-xl flex items-center justify-center transition-colors"
-                    >
-                      <X className="w-5 h-5 text-red-600" />
-                    </button>
-                  </motion.div>
+                  <p className="text-[#003B73]">Drag & drop a file here, or click to select a file</p>
                 )}
+                <p className="text-sm text-[#003B73]/60 mt-2">Supported formats: PDF, DOCX, TXT. Max file size: 50MB.</p>
               </div>
+
+              {files.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-lg font-semibold text-[#003B73]">Selected File:</h3>
+                  <div className="flex items-center justify-center gap-4 p-4 mt-2 bg-white/50 rounded-xl border border-[#003B73]/10">
+                    <FileText className="w-6 h-6 text-[#003B73]" />
+                    <span className="text-[#003B73]">{files[0].name}</span>
+                    <button onClick={() => setFiles([])}>
+                      <X className="w-5 h-5 text-red-500" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {fileError && <p className="text-red-500 mt-4">{fileError}</p>}
+
 
               {/* Continue Button */}
               {selectedFile && (

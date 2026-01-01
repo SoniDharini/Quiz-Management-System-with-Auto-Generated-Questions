@@ -189,6 +189,7 @@ class Quiz(models.Model):
     
     is_ai_generated = models.BooleanField(default=True)
     is_published = models.BooleanField(default=True)
+    is_temporary = models.BooleanField(default=False)
     time_limit = models.IntegerField(null=True, blank=True, help_text="Time limit in seconds")
     popularity_score = models.IntegerField(default=0)
     

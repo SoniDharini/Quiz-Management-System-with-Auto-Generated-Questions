@@ -47,6 +47,7 @@ function AppContent() {
           onNavigateToCreateQuiz={() => navigate('/create-quiz')}
           onNavigateToFeatures={() => navigate('/features')}
           onNavigateToTakeQuiz={(quizId) => navigate(quizId ? `/take-quiz/${quizId}` : '/take-quiz')}
+          onNavigateToUploadQuiz={() => navigate('/upload-quiz')}
         />
       } />
       <Route path="/create-quiz" element={<CreateQuizPage onBack={() => navigate('/')} onNavigateToTakeQuiz={(quizId) => navigate(quizId ? `/take-quiz/${quizId}` : '/take-quiz')} />} />

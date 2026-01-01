@@ -701,9 +701,9 @@ class QuizGenerateFromFileView(APIView):
         if not file:
             return Response({'error': 'File is required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Validate file size (max 10MB)
-        if file.size > 10 * 1024 * 1024:
-            return Response({'error': 'File size must be less than 10MB'}, status=status.HTTP_400_BAD_REQUEST)
+        # Validate file size (max 50MB)
+        if file.size > 50 * 1024 * 1024:
+            return Response({'error': 'File size must be less than 50MB'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Validate file type
         allowed_extensions = ['.pdf', '.docx', '.txt', '.doc']
@@ -810,6 +810,7 @@ class QuizGenerateFromFileView(APIView):
                 quiz_type='file_upload',
                 is_ai_generated=True,
                 is_published=True,  # Explicitly set to ensure quiz is accessible
+                is_temporary=True, # Mark as temporary
                 created_by=request.user,
                 uploaded_file=file
             )
@@ -1098,34 +1099,39 @@ class QuizSubmitView(APIView):
         attempt.calculate_score()
         attempt.save()
         
-        # Update user profile
-        profile = request.user.profile
-        profile.total_quizzes_taken += 1
-        profile.total_questions_answered += attempt.total_questions
-        profile.total_correct_answers += attempt.correct_answers
-        profile.add_xp(attempt.xp_earned)
-        profile.update_streak()
-        streak_lost = getattr(profile, 'streak_was_just_reset', False)
-        
-        # Update analytics
-        analytics, created = QuizAnalytics.objects.get_or_create(user=request.user)
-        analytics.total_quizzes_taken += 1
-        analytics.total_questions_answered += attempt.total_questions
-        analytics.total_correct_answers += attempt.correct_answers
-        
-        if quiz.difficulty == 'easy':
-            analytics.easy_quizzes_taken += 1
-        elif quiz.difficulty == 'medium':
-            analytics.medium_quizzes_taken += 1
+        # If the quiz is temporary, don't update user profile stats
+        if not quiz.is_temporary:
+            # Update user profile
+            profile = request.user.profile
+            profile.total_quizzes_taken += 1
+            profile.total_questions_answered += attempt.total_questions
+            profile.total_correct_answers += attempt.correct_answers
+            profile.add_xp(attempt.xp_earned)
+            profile.update_streak()
+            streak_lost = getattr(profile, 'streak_was_just_reset', False)
+            
+            # Update analytics
+            analytics, created = QuizAnalytics.objects.get_or_create(user=request.user)
+            analytics.total_quizzes_taken += 1
+            analytics.total_questions_answered += attempt.total_questions
+            analytics.total_correct_answers += attempt.correct_answers
+            
+            if quiz.difficulty == 'easy':
+                analytics.easy_quizzes_taken += 1
+            elif quiz.difficulty == 'medium':
+                analytics.medium_quizzes_taken += 1
+            else:
+                analytics.hard_quizzes_taken += 1
+            
+            analytics.total_time_spent += time_taken
+            if analytics.total_quizzes_taken > 0:
+                analytics.average_quiz_time = analytics.total_time_spent // analytics.total_quizzes_taken
+            
+            analytics.save()
         else:
-            analytics.hard_quizzes_taken += 1
-        
-        analytics.total_time_spent += time_taken
-        if analytics.total_quizzes_taken > 0:
-            analytics.average_quiz_time = analytics.total_time_spent // analytics.total_quizzes_taken
-        
-        analytics.save()
-        
+            profile = request.user.profile
+            streak_lost = False # Default value for temporary quizzes
+
         # Return results
         attempt_serializer = QuizAttemptSerializer(attempt)
         quiz_serializer = QuizResultSerializer(quiz)
@@ -1158,7 +1164,7 @@ class UserQuizHistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        attempts = QuizAttempt.objects.filter(user=request.user).select_related('quiz')
+        attempts = QuizAttempt.objects.filter(user=request.user, quiz__is_temporary=False).select_related('quiz')
         serializer = QuizAttemptSerializer(attempts, many=True)
         return Response(serializer.data)
 
