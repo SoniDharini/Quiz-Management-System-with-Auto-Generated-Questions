@@ -59,6 +59,19 @@ export const authAPI = {
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     return response.ok;
+  },
+
+  changePassword: async (data: any) => {
+    const response = await fetch(`${API_BASE_URL}/auth/change-password/`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to change password');
+    }
+    return response.json();
   }
 };
 
@@ -98,6 +111,14 @@ export const userAPI = {
     return response.json();
   },
 
+  getUserAnalytics: async () => {
+    const response = await fetch(`${API_BASE_URL}/user/analytics/`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch user analytics');
+    return response.json();
+  },
+
   getLeaderboard: async () => {
     const response = await fetch(`${API_BASE_URL}/leaderboard/`, {
       headers: getAuthHeaders()
@@ -120,6 +141,15 @@ export const userAPI = {
     });
     if (!response.ok) throw new Error('Failed to fetch user achievements');
     return response.json();
+  },
+
+  deleteAccount: async () => {
+    const response = await fetch(`${API_BASE_URL}/user/delete/`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to delete account');
+    return true;
   }
 };
 

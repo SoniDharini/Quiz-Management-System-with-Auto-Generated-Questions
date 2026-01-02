@@ -20,6 +20,8 @@ from .views import (
     AchievementListView, UserAchievementsView,
     # Leaderboard
     LeaderboardView,
+    # Account
+    DeleteAccountView,
 )
 
 urlpatterns = [
@@ -28,6 +30,7 @@ urlpatterns = [
     path('auth/login/', LoginView.as_view(), name='login'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('auth/change-password/', ChangePasswordView.as_view(), name='change-password'),
+    path('user/delete/', DeleteAccountView.as_view(), name='delete-account'),
     
     # Category hierarchy endpoints
     path('categories/', CategoryListView.as_view(), name='category-list'),

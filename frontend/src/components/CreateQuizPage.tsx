@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { 
+import {
   ArrowLeft,
   Upload,
   FileText,
@@ -41,6 +41,7 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
   const [error, setError] = useState<string | null>(null);
   const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+
   // States for file upload from FileUploadQuizPage
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -126,7 +127,7 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
 
         console.log('Quiz generation result:', result);
         console.log('Quiz ID from result:', result.quiz_id, 'Type:', typeof result.quiz_id);
-        
+
         setGeneratedQuiz({
           id: result.quiz_id,
           title: result.title,
@@ -185,11 +186,10 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
           <div className="flex items-center justify-center gap-4">
             {/* Step 1 */}
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                step === 'upload' ? 'bg-gradient-to-br from-[#003B73] to-[#0056A8] text-white shadow-lg' :
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${step === 'upload' ? 'bg-gradient-to-br from-[#003B73] to-[#0056A8] text-white shadow-lg' :
                 ['configure', 'generating', 'complete'].includes(step) ? 'bg-green-500 text-white' :
-                'bg-white border-2 border-[#003B73]/20 text-[#003B73]/40'
-              }`}>
+                  'bg-white border-2 border-[#003B73]/20 text-[#003B73]/40'
+                }`}>
                 {['configure', 'generating', 'complete'].includes(step) ? (
                   <CheckCircle className="w-6 h-6" />
                 ) : (
@@ -202,18 +202,16 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
             </div>
 
             <div className="w-16 h-1 bg-[#003B73]/20 rounded-full">
-              <div className={`h-full bg-gradient-to-r from-[#003B73] to-[#0056A8] rounded-full transition-all ${
-                ['configure', 'generating', 'complete'].includes(step) ? 'w-full' : 'w-0'
-              }`} />
+              <div className={`h-full bg-gradient-to-r from-[#003B73] to-[#0056A8] rounded-full transition-all ${['configure', 'generating', 'complete'].includes(step) ? 'w-full' : 'w-0'
+                }`} />
             </div>
 
             {/* Step 2 */}
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                step === 'configure' ? 'bg-gradient-to-br from-[#003B73] to-[#0056A8] text-white shadow-lg' :
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${step === 'configure' ? 'bg-gradient-to-br from-[#003B73] to-[#0056A8] text-white shadow-lg' :
                 ['generating', 'complete'].includes(step) ? 'bg-green-500 text-white' :
-                'bg-white border-2 border-[#003B73]/20 text-[#003B73]/40'
-              }`}>
+                  'bg-white border-2 border-[#003B73]/20 text-[#003B73]/40'
+                }`}>
                 {['generating', 'complete'].includes(step) ? (
                   <CheckCircle className="w-6 h-6" />
                 ) : (
@@ -226,18 +224,16 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
             </div>
 
             <div className="w-16 h-1 bg-[#003B73]/20 rounded-full">
-              <div className={`h-full bg-gradient-to-r from-[#003B73] to-[#0056A8] rounded-full transition-all ${
-                ['complete'].includes(step) ? 'w-full' : 'w-0'
-              }`} />
+              <div className={`h-full bg-gradient-to-r from-[#003B73] to-[#0056A8] rounded-full transition-all ${['complete'].includes(step) ? 'w-full' : 'w-0'
+                }`} />
             </div>
 
             {/* Step 3 */}
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                step === 'complete' ? 'bg-green-500 text-white shadow-lg' :
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${step === 'complete' ? 'bg-green-500 text-white shadow-lg' :
                 step === 'generating' ? 'bg-gradient-to-br from-[#003B73] to-[#0056A8] text-white shadow-lg' :
-                'bg-white border-2 border-[#003B73]/20 text-[#003B73]/40'
-              }`}>
+                  'bg-white border-2 border-[#003B73]/20 text-[#003B73]/40'
+                }`}>
                 <Zap className="w-6 h-6" />
               </div>
               <span className={`hidden md:block ${['generating', 'complete'].includes(step) ? 'text-[#003B73]' : 'text-[#003B73]/60'}`}>
@@ -270,9 +266,8 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
               {/* File Upload Area - using react-dropzone */}
               <div
                 {...getRootProps()}
-                className={`p-12 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
-                  isDragActive ? 'border-[#003B73] bg-[#DFF4FF]' : 'border-[#003B73]/30 hover:border-[#003B73]/50'
-                }`}
+                className={`p-12 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${isDragActive ? 'border-[#003B73] bg-[#DFF4FF]' : 'border-[#003B73]/30 hover:border-[#003B73]/50'
+                  }`}
               >
                 <input {...getInputProps()} />
                 <UploadCloud className="w-16 h-16 mx-auto text-[#003B73]/50 mb-4" />
@@ -379,11 +374,10 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
                       <button
                         key={level}
                         onClick={() => setDifficulty(level)}
-                        className={`py-3 rounded-2xl transition-all ${
-                          difficulty === level
-                            ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white shadow-lg'
-                            : 'bg-white border-2 border-[#003B73]/20 text-[#003B73] hover:border-[#003B73]/40'
-                        }`}
+                        className={`py-3 rounded-2xl transition-all ${difficulty === level
+                          ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white shadow-lg'
+                          : 'bg-white border-2 border-[#003B73]/20 text-[#003B73] hover:border-[#003B73]/40'
+                          }`}
                       >
                         {level.charAt(0).toUpperCase() + level.slice(1)}
                       </button>

@@ -8,6 +8,8 @@ import { FeaturesPage } from './components/FeaturesPage';
 import { ProfilePage } from './components/ProfilePage';
 import { TakeQuizPage } from './components/TakeQuizPage';
 
+import { SettingsPage } from './components/SettingsPage';
+
 function AppContent() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(true); // Default to true for now
@@ -41,9 +43,10 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/" element={
-        <HomePage 
+        <HomePage
           onLogout={handleLogout}
           onNavigateToProfile={() => navigate('/profile')}
+          onNavigateToSettings={() => navigate('/settings')}
           onNavigateToCreateQuiz={() => navigate('/create-quiz')}
           onNavigateToFeatures={() => navigate('/features')}
           onNavigateToTakeQuiz={(quizId) => navigate(quizId ? `/take-quiz/${quizId}` : '/take-quiz')}
@@ -53,6 +56,7 @@ function AppContent() {
       <Route path="/create-quiz" element={<CreateQuizPage onBack={() => navigate('/')} onNavigateToTakeQuiz={(quizId) => navigate(quizId ? `/take-quiz/${quizId}` : '/take-quiz')} />} />
       <Route path="/features" element={<FeaturesPage onBack={() => navigate('/')} />} />
       <Route path="/profile" element={<ProfilePage onBack={() => navigate('/')} onLogout={handleLogout} />} />
+      <Route path="/settings" element={<SettingsPage onBack={() => navigate('/')} />} />
       <Route path="/take-quiz" element={<TakeQuizPage onBack={() => navigate('/')} />} />
       <Route path="/take-quiz/:quizId" element={<TakeQuizPage onBack={() => navigate('/')} />} />
     </Routes>

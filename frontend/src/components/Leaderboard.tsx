@@ -53,7 +53,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isOpen, onClose, leaderboardD
                 </div>
                 <div className="leaderboard-user-info">
                   <span className="leaderboard-user-name">{user.username}</span>
-                  <span className="leaderboard-user-xp">{user.total_xp} XP</span>
+                  <span className="leaderboard-user-xp">{user.xp} XP</span>
                 </div>
               </div>
             ))}
@@ -74,7 +74,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isOpen, onClose, leaderboardD
                     </div>
                     <span className="leaderboard-user-name">{user.username}</span>
                   </div>
-                  <div className="leaderboard-list-item-xp">{user.total_xp} XP</div>
+                  <div className="leaderboard-list-item-xp">{user.xp} XP</div>
                 </div>
               ))
             )}

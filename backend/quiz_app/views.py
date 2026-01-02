@@ -14,7 +14,7 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import api_view, permission_classes, action
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from openai import OpenAI
 
 from .models import (
@@ -269,7 +269,7 @@ class SubjectListView(APIView):
 class UserProfileView(APIView):
     """Get and update user profile"""
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
         try:
@@ -1187,13 +1187,44 @@ class UserQuizHistoryView(APIView):
 # ==================== ANALYTICS VIEWS ====================
 
 class UserAnalyticsView(APIView):
-    """Get user analytics"""
+    """Get user analytics including streak and activity history"""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        analytics, created = QuizAnalytics.objects.get_or_create(user=request.user)
-        serializer = QuizAnalyticsSerializer(analytics)
-        return Response(serializer.data)
+        user = request.user
+        profile = user.profile
+        
+        # 1. Update/Check Streak
+        profile.check_streak()
+        
+        # 2. Get Analytics Base Data
+        analytics, created = QuizAnalytics.objects.get_or_create(user=user)
+        base_serializer = QuizAnalyticsSerializer(analytics)
+        
+        # 3. Get Activity History
+        from django.db.models.functions import TruncDate
+        activity_dates = QuizAttempt.objects.filter(
+            user=user, 
+            status='completed'
+        ).annotate(
+            date=TruncDate('completed_at')
+        ).values('date').distinct().order_by('-date')
+        
+        activity_history = [
+            item['date'].strftime('%Y-%m-%d') 
+            for item in activity_dates 
+            if item['date']
+        ]
+
+        # 4. Combine Data
+        data = base_serializer.data
+        data.update({
+            'streak_days': profile.current_streak,
+            'longest_streak': profile.longest_streak,
+            'activity_history': activity_history
+        })
+        
+        return Response(data)
 
 class UserPerformanceView(APIView):
     """Get user performance data"""
@@ -1268,6 +1299,23 @@ class UserPerformanceView(APIView):
             }
 
 
+        # Get activity history (dates of completed quizzes)
+        from django.db.models.functions import TruncDate
+        
+        activity_dates = QuizAttempt.objects.filter(
+            user=user, 
+            status='completed'
+        ).annotate(
+            date=TruncDate('completed_at')
+        ).values('date').distinct().order_by('-date')
+        
+        # Convert to list of strings "YYYY-MM-DD"
+        activity_history = [
+            item['date'].strftime('%Y-%m-%d') 
+            for item in activity_dates 
+            if item['date']
+        ]
+
         data = {
             'overall': {
                 'total_quizzes_attempted': total_quizzes_attempted,
@@ -1279,7 +1327,10 @@ class UserPerformanceView(APIView):
                 'highest_score': QuizAttempt.objects.filter(user=user, status='completed').aggregate(Avg('score_percentage'))['score_percentage__avg'] or 0,
             },
             'category_wise_performance': category_wise_performance,
-            'subject_wise_performance': subject_wise_performance
+            'subject_wise_performance': subject_wise_performance,
+            'activity_history': activity_history,
+            'streak_days': profile.current_streak,
+            'longest_streak': profile.longest_streak,
         }
         return Response(data)
 
@@ -1391,18 +1442,29 @@ class UserAchievementsView(APIView):
         serializer = UserAchievementSerializer(user_achievements, many=True)
         return Response(serializer.data)
 
-class LeaderboardView(APIView):
-    """Get leaderboard data"""
+from rest_framework import status
+
+class DeleteAccountView(APIView):
+    """Delete user account"""
     permission_classes = [IsAuthenticated]
 
+    def delete(self, request):
+        user = request.user
+        user.delete()
+        return Response({"message": "Account deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+class LeaderboardView(APIView):
+    """Get global leaderboard"""
     def get(self, request):
-        profiles = UserProfile.objects.order_by('-level', '-xp')
+        # Top 10 users by XP, only showing public profiles
+        top_users = User.objects.filter(profile__is_public_profile=True).select_related('profile').order_by('-profile__xp')[:10]
         data = []
-        for profile in profiles:
+        for user in top_users:
             data.append({
-                'id': profile.user.id,
-                'username': profile.user.username,
-                'total_xp': profile.xp,
-                'level': profile.level,
+                'id': user.id,
+                'username': user.username,
+                'xp': user.profile.xp,
+                'avatar': user.username[:2].upper(),
+                'level': user.profile.xp // 100 + 1
             })
         return Response(data)

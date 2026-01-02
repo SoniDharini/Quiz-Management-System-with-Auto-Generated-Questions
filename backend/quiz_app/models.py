@@ -69,6 +69,20 @@ class UserProfile(models.Model):
     current_streak = models.IntegerField(default=0)
     longest_streak = models.IntegerField(default=0)
     last_quiz_date = models.DateField(null=True, blank=True)
+
+    # Preferences
+    theme_preference = models.CharField(max_length=20, default='light')
+    email_notifications = models.BooleanField(default=True)
+    push_notifications = models.BooleanField(default=True)
+    streak_reminders = models.BooleanField(default=True)
+    
+    # Privacy
+    is_public_profile = models.BooleanField(default=True)
+    show_activity = models.BooleanField(default=True)
+    
+    # Quiz Defaults
+    default_difficulty = models.CharField(max_length=10, choices=[('easy', 'Easy'), ('medium', 'Medium'), ('hard', 'Hard')], default='medium')
+    default_question_count = models.IntegerField(default=10, validators=[MinValueValidator(5), MaxValueValidator(100)])
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
