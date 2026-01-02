@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { X, Trophy, Award, User } from 'lucide-react';
+import { X, Trophy, Award, User, ArrowLeft } from 'lucide-react';
 import './Leaderboard.css';
 
 interface LeaderboardProps {
@@ -16,6 +16,8 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isOpen, onClose, leaderboardD
   const topThree = leaderboardData.slice(0, 3);
   const restOfLeaderboard = leaderboardData.slice(3);
 
+
+
   return (
     <div className="leaderboard-backdrop" onClick={onClose}>
       <motion.div
@@ -27,13 +29,14 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isOpen, onClose, leaderboardD
         onClick={(e) => e.stopPropagation()}
       >
         <div className="leaderboard-header">
+          <button onClick={onClose} className="leaderboard-close-button">
+            <ArrowLeft className="w-6 h-6" />
+            <span className="ml-2 font-semibold">Back</span>
+          </button>
           <div className="leaderboard-title-container">
             <Trophy className="leaderboard-title-icon" />
-            <h2 className="leaderboard-title">Leaderboard</h2>
+            <h2 className="leaderboard-title">Leaderboard <span className="text-sm font-normal opacity-70">({leaderboardData.length})</span></h2>
           </div>
-          <button onClick={onClose} className="leaderboard-close-button">
-            <X />
-          </button>
         </div>
 
         <div className="leaderboard-content">
@@ -57,18 +60,24 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isOpen, onClose, leaderboardD
           </div>
 
           <div className="leaderboard-list">
-            {restOfLeaderboard.map((user, index) => (
-              <div key={user.id} className={`leaderboard-list-item ${currentUser?.id === user.id ? 'current-user' : ''}`}>
-                <div className="leaderboard-list-item-rank">#{index + 4}</div>
-                <div className="leaderboard-list-item-user">
-                  <div className="leaderboard-user-avatar small">
-                    <User />
-                  </div>
-                  <span className="leaderboard-user-name">{user.username}</span>
-                </div>
-                <div className="leaderboard-list-item-xp">{user.total_xp} XP</div>
+            {restOfLeaderboard.length === 0 ? (
+              <div className="text-center text-gray-500 py-4 italic">
+                No other users on the leaderboard yet.
               </div>
-            ))}
+            ) : (
+              restOfLeaderboard.map((user, index) => (
+                <div key={user.id} className={`leaderboard-list-item ${currentUser?.id === user.id ? 'current-user' : ''}`}>
+                  <div className="leaderboard-list-item-rank">#{index + 4}</div>
+                  <div className="leaderboard-list-item-user">
+                    <div className="leaderboard-user-avatar small">
+                      <User />
+                    </div>
+                    <span className="leaderboard-user-name">{user.username}</span>
+                  </div>
+                  <div className="leaderboard-list-item-xp">{user.total_xp} XP</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </motion.div>

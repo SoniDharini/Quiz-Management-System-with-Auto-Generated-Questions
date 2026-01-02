@@ -20,7 +20,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
-    'quiz_app',
+    'quiz_app.apps.QuizAppConfig',
 ]
 
 MIDDLEWARE = [

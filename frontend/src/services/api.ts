@@ -104,6 +104,22 @@ export const userAPI = {
     });
     if (!response.ok) throw new Error('Failed to fetch leaderboard');
     return response.json();
+  },
+
+  getAllAchievements: async () => {
+    const response = await fetch(`${API_BASE_URL}/achievements/`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch all achievements');
+    return response.json();
+  },
+
+  getUserAchievements: async () => {
+    const response = await fetch(`${API_BASE_URL}/user/achievements/`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch user achievements');
+    return response.json();
   }
 };
 
@@ -124,7 +140,7 @@ export const categoryAPI = {
   },
 
   getLevels: async (categoryId?: number) => {
-    const url = categoryId 
+    const url = categoryId
       ? `${API_BASE_URL}/levels/?category_id=${categoryId}`
       : `${API_BASE_URL}/levels/`;
     console.log('API: Fetching levels from', url);
@@ -141,7 +157,7 @@ export const categoryAPI = {
   },
 
   getSubjects: async (levelId?: number) => {
-    const url = levelId 
+    const url = levelId
       ? `${API_BASE_URL}/subjects/?level_id=${levelId}`
       : `${API_BASE_URL}/subjects/`;
     console.log('API: Fetching subjects from', url);
@@ -200,11 +216,11 @@ export const quizAPI = {
     const response = await fetch(`${API_BASE_URL}/quiz/generate/`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ 
-        subject_id: subjectId, 
-        difficulty, 
+      body: JSON.stringify({
+        subject_id: subjectId,
+        difficulty,
         num_questions: numQuestions,
-        title 
+        title
       })
     });
     console.log('API: Generate quiz response status:', response.status);
@@ -230,7 +246,7 @@ export const quizAPI = {
   // Get recommended quizzes
   getRecommendedQuizzes: async () => {
     const response = await fetch(`${API_BASE_URL}/quizzes/recommended/`, {
-        headers: getAuthHeaders()
+      headers: getAuthHeaders()
     });
     if (!response.ok) throw new Error('Failed to fetch recommended quizzes');
     return response.json();
@@ -278,8 +294,8 @@ export const quizAPI = {
     const response = await fetch(`${API_BASE_URL}/quiz/submit/`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ 
-        attempt_id: attemptId, 
+      body: JSON.stringify({
+        attempt_id: attemptId,
         answers,
         time_taken: timeTaken
       })
@@ -305,11 +321,11 @@ export const quizAPI = {
   }) => {
     const token = getAuthToken();
     console.log('generateQuizFromFile - Token exists:', !!token);
-    
+
     if (!token) {
       throw new Error('Not authenticated. Please login again.');
     }
-    
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', options.title);
@@ -324,7 +340,7 @@ export const quizAPI = {
       },
       body: formData
     });
-    
+
     console.log('File upload response status:', response.status);
     if (!response.ok) {
       const error = await response.json();

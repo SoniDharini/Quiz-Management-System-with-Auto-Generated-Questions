@@ -877,24 +877,27 @@ class RecommendedQuizzes(APIView):
         preferred_category_names = [cat.strip() for cat in profile.category_preference.split(',') if cat.strip()]
         
         # Get the most recent category from the user's last 5 attempts
-        recent_attempts = QuizAttempt.objects.filter(user=user, status='completed').order_by('-completed_at').select_related('quiz__category')[:5]
+        recent_attempts = QuizAttempt.objects.filter(user=user, status='completed').order_by('-completed_at').select_related('quiz__category', 'quiz__subject')[:5]
         
         recent_categories = [attempt.quiz.category.name for attempt in recent_attempts if attempt.quiz.category]
         most_recent_category = recent_categories[0] if recent_categories else None
 
-        # If user has no preferences or recent activity, recommend top popular quizzes
-        if not preferred_category_names and not recent_categories:
-            trending_quizzes = Quiz.objects.filter(is_published=True).order_by('-popularity_score')[:5]
-            serializer = QuizListSerializer(trending_quizzes, many=True)
-            return Response(serializer.data)
+        recent_subjects = [attempt.quiz.subject.name for attempt in recent_attempts if attempt.quiz.subject]
+        most_recent_subject = recent_subjects[0] if recent_subjects else None
+
+        # If user has no preferences or recent activity, return empty list (don't trigger recommendations)
+        if not preferred_category_names and not recent_subjects:
+            return Response([])
 
         # 2. Fetch all quizzes and user's recent attempts
-        predefined_categories = ["Academics", "Computer Science", "Government Exams"]
+        # STRICT MODE: Only fetch quizzes that match the user's recent SUBJECTS.
+        # This prevents "Chemistry" from showing up when user did "Biology".
         all_quizzes = list(Quiz.objects.filter(
             is_published=True,
-            category__name__in=predefined_categories,
-            is_temporary=False
-        ).select_related('category'))
+            is_temporary=False,
+            subject__name__in=recent_subjects # STRICT FILTER
+        ).select_related('category', 'subject'))
+        
         attempted_quizzes_map = {attempt.quiz_id: attempt.completed_at for attempt in recent_attempts}
 
         # 3. Score each quiz
@@ -902,22 +905,18 @@ class RecommendedQuizzes(APIView):
         for quiz in all_quizzes:
             score = 0
             
-            # Rule 1: Prioritize preferred categories
+            # Rule 1: Prioritize preferred categories (Keep as tie-breaker)
             if quiz.category.name in preferred_category_names:
-                score += 20
-            
-            # Rule 2: Boost score for recently attempted categories
-            if quiz.category.name in recent_categories:
-                score += 15
-            
-            # Rule 3: Give an extra boost for the most recent category
-            if quiz.category.name == most_recent_category:
                 score += 10
-
-            # Rule 4: Factor in popularity
+            
+            # Rule 2: Boost for MOST recent subject
+            if quiz.subject.name == most_recent_subject:
+                score += 50 
+            
+            # Rule 3: Factor in popularity
             score += quiz.popularity_score
             
-            # Rule 5: Deprioritize recently attempted quizzes
+            # Rule 4: Deprioritize recently attempted quizzes
             if quiz.id in attempted_quizzes_map:
                 days_since_attempt = (timezone.now() - attempted_quizzes_map[quiz.id]).days
                 if days_since_attempt <= 1:

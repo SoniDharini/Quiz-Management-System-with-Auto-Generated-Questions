@@ -93,7 +93,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
   const [isLeaderboardOpen, setLeaderboardOpen] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  
+
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
@@ -120,15 +120,31 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
     }
   };
 
+  const [achievementsList, setAchievementsList] = useState<any[]>([]);
+
+  // Icon mapping
+  const iconMap: { [key: string]: any } = {
+    'Award': Award,
+    'Target': Target,
+    'Brain': Brain,
+    'Trophy': Trophy,
+    'Zap': Zap,
+    'Crown': Crown,
+    'Clock': Clock,
+    'Star': Trophy, // Fallback
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         setIsLoading(true);
-        const [profile, history, activity, leaderboard] = await Promise.all([
+        const [profile, history, activity, leaderboard, allBadges, unlockedBadges] = await Promise.all([
           userAPI.getProfile(),
           quizAPI.getQuizHistory().catch((err) => { console.error('Failed to fetch quiz history:', err); return []; }),
           userAPI.getRecentActivity().catch((err) => { console.error('Failed to fetch recent activity:', err); return []; }),
           userAPI.getLeaderboard().catch((err) => { console.error('Failed to fetch leaderboard:', err); return []; }),
+          userAPI.getAllAchievements().catch((err) => { console.error('Failed to fetch achievements:', err); return []; }),
+          userAPI.getUserAchievements().catch((err) => { console.error('Failed to fetch user achievements:', err); return []; }),
         ]);
 
         if (profile) {
@@ -136,6 +152,9 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
           if (leaderboard && leaderboard.length > 0) {
             currentUserRank = leaderboard.findIndex((u: any) => u.username === profile.username) + 1;
           }
+
+          // Calculate unlocked count directly from response
+          const unlockedCount = unlockedBadges.length;
 
           setUserData({
             id: profile.id,
@@ -153,18 +172,37 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
             quizzesCreated: profile.total_quizzes_created || 0,
             quizzesTaken: profile.total_quizzes_taken || 0,
             averageScore: profile.average_score || 0,
-            totalBadges: profile.total_achievements || 0,
+            totalBadges: unlockedCount, // Use real count
             rank: currentUserRank,
           });
 
           const currentUserFromProfile = { id: profile.id, username: profile.username, total_xp: profile.xp };
           setCurrentUser(currentUserFromProfile);
         }
-        
+
         setQuizHistory(history);
         setRecentActivity(activity);
         setLeaderboardData(leaderboard);
-        
+
+        // Process Achievements
+        const unlockedIds = new Set(unlockedBadges.map((ua: any) => ua.achievement));
+        const processedAchievements = allBadges.map((badge: any) => ({
+          id: badge.id,
+          title: badge.title,
+          description: badge.description,
+          icon: iconMap[badge.icon] || Trophy,
+          color: badge.color,
+          unlocked: unlockedIds.has(badge.id)
+        }));
+
+        // Sort: Unlocked first, then by ID
+        processedAchievements.sort((a: any, b: any) => {
+          if (a.unlocked === b.unlocked) return a.id - b.id;
+          return a.unlocked ? -1 : 1;
+        });
+
+        setAchievementsList(processedAchievements);
+
       } catch (err: any) {
         console.error('Failed to load profile data:', err);
         setError(err.message || 'Failed to load profile');
@@ -192,108 +230,6 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
 
     fetchUserData();
   }, []);
-
-  // Process quiz history to generate performance data
-  useEffect(() => {
-    if (!quizHistory || quizHistory.length === 0) {
-      setOverallMetrics(null);
-      setQuizzesByCategoryPieData(null);
-      setCategoryBarData(null);
-      return;
-    }
-
-    const completedQuizzes = quizHistory.filter(attempt => attempt.completed_at);
-
-    if (completedQuizzes.length === 0) {
-      setOverallMetrics(null);
-      setQuizzesByCategoryPieData(null);
-      setCategoryBarData(null);
-      return;
-    }
-
-    // --- Overall Performance Metrics ---
-    const allScores = completedQuizzes.map(q => parseFloat(q.formatted_score_percentage));
-    const averageScore = allScores.reduce((sum, score) => sum + score, 0) / allScores.length;
-    const highestScore = Math.max(...allScores);
-
-    setOverallMetrics({ average: averageScore, highest: highestScore });
-
-    // --- Quizzes Played by Category Pie Chart ---
-    const quizzesByCategory: { [key: string]: number } = {};
-    completedQuizzes.forEach(attempt => {
-      const category = attempt.quiz_title.split(' ')[0] || 'General';
-      quizzesByCategory[category] = (quizzesByCategory[category] || 0) + 1;
-    });
-
-    const categoryLabelsForPie = Object.keys(quizzesByCategory);
-    const categoryQuizCounts = categoryLabelsForPie.map(cat => quizzesByCategory[cat]);
-
-    setQuizzesByCategoryPieData({
-      labels: categoryLabelsForPie,
-      datasets: [{
-        label: 'Quizzes Played',
-        data: categoryQuizCounts,
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.6)',
-          'rgba(54, 162, 235, 0.6)',
-          'rgba(255, 206, 86, 0.6)',
-          'rgba(75, 192, 192, 0.6)',
-          'rgba(153, 102, 255, 0.6)',
-          'rgba(255, 159, 64, 0.6)',
-        ],
-        borderWidth: 1,
-      }],
-    });
-
-    // --- Per-Category Performance (Bar Chart) ---
-    const categoryPerformance: { [key: string]: { scores: number[], count: number } } = {};
-    completedQuizzes.forEach(attempt => {
-      const category = attempt.quiz_title.split(' ')[0] || 'General';
-      if (!categoryPerformance[category]) {
-        categoryPerformance[category] = { scores: [], count: 0 };
-      }
-      categoryPerformance[category].scores.push(attempt.score_percentage);
-      categoryPerformance[category].count++;
-    });
-
-    const categoryLabelsForBar = Object.keys(categoryPerformance);
-    const barChartData = {
-      labels: categoryLabelsForBar,
-      datasets: [
-        {
-          label: 'Average Score (%)',
-          data: categoryLabelsForBar.map(cat => categoryPerformance[cat].scores.reduce((a, b) => a + b, 0) / categoryPerformance[cat].count),
-          backgroundColor: 'rgba(54, 162, 235, 0.6)',
-          yAxisID: 'y-axis-scores',
-        },
-        {
-          label: 'Highest Score (%)',
-          data: categoryLabelsForBar.map(cat => Math.max(...categoryPerformance[cat].scores)),
-          backgroundColor: 'rgba(75, 192, 192, 0.6)',
-          yAxisID: 'y-axis-scores',
-        },
-        {
-          label: 'Quizzes Taken',
-          data: categoryLabelsForBar.map(cat => categoryPerformance[cat].count),
-          backgroundColor: 'rgba(255, 206, 86, 0.6)',
-          yAxisID: 'y-axis-count',
-        }
-      ]
-    };
-    setCategoryBarData(barChartData);
-
-  }, [quizHistory]);
-
-  const achievements = [
-    { id: 1, title: 'First Steps', description: 'Complete your first quiz', icon: Award, color: 'from-blue-400 to-blue-600', unlocked: true },
-    { id: 2, title: 'Week Warrior', description: '7-day streak', icon: Target, color: 'from-orange-400 to-orange-600', unlocked: true },
-    { id: 3, title: 'Knowledge Seeker', description: 'Take 25 quizzes', icon: Brain, color: 'from-purple-400 to-purple-600', unlocked: true },
-    { id: 4, title: 'Perfect Score', description: 'Score 100% on a quiz', icon: Trophy, color: 'from-green-400 to-green-600', unlocked: true },
-    { id: 5, title: 'Quiz Master', description: 'Create 10 quizzes', icon: Trophy, color: 'from-yellow-400 to-yellow-600', unlocked: true },
-    { id: 6, title: 'Speed Demon', description: 'Complete quiz in record time', icon: Zap, color: 'from-cyan-400 to-cyan-600', unlocked: true },
-    { id: 7, title: 'Consistent Learner', description: '30-day streak', icon: Trophy, color: 'from-indigo-400 to-indigo-600', unlocked: false },
-    { id: 8, title: 'Champion', description: 'Reach level 10', icon: Trophy, color: 'from-pink-400 to-pink-600', unlocked: false },
-  ];
 
   // Show loading state
   if (isLoading || !userData) {
@@ -325,7 +261,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
               </motion.button>
               <div className="text-[#003B73] text-xl font-semibold">My Profile</div>
             </div>
-            
+
             <motion.button
               onClick={handleLogoutClick}
               className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all"
@@ -343,16 +279,16 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
       {showLogoutConfirm && (
         <>
           {/* Backdrop */}
-          <motion.div 
+          <motion.div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             onClick={cancelLogout}
           />
-          
+
           {/* Modal */}
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <motion.div 
+            <motion.div
               className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-[#003B73]/10"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -395,16 +331,16 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
       {showEditPicture && (
         <>
           {/* Backdrop */}
-          <motion.div 
+          <motion.div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             onClick={() => setShowEditPicture(false)}
           />
-          
+
           {/* Modal */}
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <motion.div 
+            <motion.div
               className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-[#003B73]/10"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -477,44 +413,44 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
       <main className="max-w-7xl mx-auto px-6 py-12">
         {showStreakModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-              <motion.div 
-                className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-[#003B73]/10"
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                  <div className="text-center mb-6">
-                      <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                          <Flame className="w-8 h-8 text-white" />
-                      </div>
-                      <h2 className="text-[#003B73] mb-2">Quiz Streak</h2>
-                  </div>
-                  <div className="text-center mb-6">
-                      <p className="text-6xl text-[#003B73] mb-2">{userData.streak}</p>
-                      <p className="text-[#003B73]/70">Current daily streak</p>
-                  </div>
-                  <div className="text-center mb-6">
-                      <p className="text-2xl text-[#003B73] mb-2">{userData.longestStreak}</p>
-                      <p className="text-[#003B73]/70">Longest streak</p>
-                  </div>
-                  <div className="text-center mb-6">
-                      <p className="text-2xl text-[#003B73] mb-2">{userData.last_quiz_date}</p>
-                      <p className="text-[#003B73]/70">Last quiz date</p>
-                  </div>
-                  <div className="text-center text-[#003B73]/70">
-                      <p>Keep it up! Complete a quiz every day to maintain your streak.</p>
-                  </div>
-                  <div className="flex justify-center mt-6">
-                      <motion.button
-                          onClick={() => setShowStreakModal(false)}
-                          className="flex-1 py-3.5 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-2xl shadow-lg hover:shadow-xl transition-all"
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                      >
-                          Close
-                      </motion.button>
-                  </div>
-              </motion.div>
+            <motion.div
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-[#003B73]/10"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Flame className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-[#003B73] mb-2">Quiz Streak</h2>
+              </div>
+              <div className="text-center mb-6">
+                <p className="text-6xl text-[#003B73] mb-2">{userData.streak}</p>
+                <p className="text-[#003B73]/70">Current daily streak</p>
+              </div>
+              <div className="text-center mb-6">
+                <p className="text-2xl text-[#003B73] mb-2">{userData.longestStreak}</p>
+                <p className="text-[#003B73]/70">Longest streak</p>
+              </div>
+              <div className="text-center mb-6">
+                <p className="text-2xl text-[#003B73] mb-2">{userData.last_quiz_date}</p>
+                <p className="text-[#003B73]/70">Last quiz date</p>
+              </div>
+              <div className="text-center text-[#003B73]/70">
+                <p>Keep it up! Complete a quiz every day to maintain your streak.</p>
+              </div>
+              <div className="flex justify-center mt-6">
+                <motion.button
+                  onClick={() => setShowStreakModal(false)}
+                  className="flex-1 py-3.5 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-2xl shadow-lg hover:shadow-xl transition-all"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Close
+                </motion.button>
+              </div>
+            </motion.div>
           </div>
         )}
         {/* Profile Header Card */}
@@ -526,7 +462,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
         >
           <div className="flex flex-col md:flex-row items-center gap-8">
             {/* Avatar */}
-            <motion.div 
+            <motion.div
               className="relative"
               whileHover={{ scale: 1.05 }}
             >
@@ -579,12 +515,11 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
 
             {/* Rank Badge */}
             <div className="text-center cursor-pointer" onClick={() => setLeaderboardOpen(true)}>
-              <div className={`w-24 h-24 rounded-2xl flex items-center justify-center shadow-2xl mb-2 ${
-                userData.rank === 1 ? 'bg-gradient-to-br from-yellow-400 to-amber-500' :
+              <div className={`w-24 h-24 rounded-2xl flex items-center justify-center shadow-2xl mb-2 ${userData.rank === 1 ? 'bg-gradient-to-br from-yellow-400 to-amber-500' :
                 userData.rank === 2 ? 'bg-gradient-to-br from-slate-300 to-slate-400' :
-                userData.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-yellow-600' :
-                'bg-gradient-to-br from-blue-400 to-indigo-500'
-              }`}>
+                  userData.rank === 3 ? 'bg-gradient-to-br from-orange-400 to-yellow-600' :
+                    'bg-gradient-to-br from-blue-400 to-indigo-500'
+                }`}>
                 {userData.rank > 0 && userData.rank <= 3 ? (
                   <Crown className="w-12 h-12 text-white" />
                 ) : (
@@ -593,9 +528,9 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
               </div>
               <p className="text-[#003B73] text-lg font-semibold">
                 {userData.rank === 1 ? 'Gold Rank' :
-                 userData.rank === 2 ? 'Silver Rank' :
-                 userData.rank === 3 ? 'Bronze Rank' :
-                 `Rank #${userData.rank}`}
+                  userData.rank === 2 ? 'Silver Rank' :
+                    userData.rank === 3 ? 'Bronze Rank' :
+                      `Rank #${userData.rank}`}
               </p>
               <p className="text-[#003B73]/60">Global Rank</p>
             </div>
@@ -611,7 +546,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
               <span className="text-[#003B73]/70">{userData.xp} / {userData.xpToNextLevel} XP</span>
             </div>
             <div className="w-full bg-[#DFF4FF]/50 rounded-full h-4 overflow-hidden border border-[#003B73]/10">
-              <motion.div 
+              <motion.div
                 className="h-full bg-gradient-to-r from-[#003B73] to-[#0056A8]"
                 initial={{ width: 0 }}
                 animate={{ width: `${(userData.xp / userData.xpToNextLevel) * 100}%` }}
@@ -622,7 +557,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
           </div>
         </motion.div>
 
-        <Leaderboard 
+        <Leaderboard
           isOpen={isLeaderboardOpen}
           onClose={() => setLeaderboardOpen(false)}
           leaderboardData={leaderboardData}
@@ -633,11 +568,10 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
         <div className="flex gap-4 mb-8">
           <motion.button
             onClick={() => setActiveTab('overview')}
-            className={`flex-1 py-4 rounded-2xl transition-all ${
-              activeTab === 'overview'
-                ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white shadow-lg'
-                : 'bg-white/80 text-[#003B73] border border-[#003B73]/10'
-            }`}
+            className={`flex-1 py-4 rounded-2xl transition-all ${activeTab === 'overview'
+              ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white shadow-lg'
+              : 'bg-white/80 text-[#003B73] border border-[#003B73]/10'
+              }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -645,11 +579,10 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
           </motion.button>
           <motion.button
             onClick={() => setActiveTab('performance')}
-            className={`flex-1 py-4 rounded-2xl transition-all ${
-              activeTab === 'performance'
-                ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white shadow-lg'
-                : 'bg-white/80 text-[#003B73] border border-[#003B73]/10'
-            }`}
+            className={`flex-1 py-4 rounded-2xl transition-all ${activeTab === 'performance'
+              ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white shadow-lg'
+              : 'bg-white/80 text-[#003B73] border border-[#003B73]/10'
+              }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -657,11 +590,10 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
           </motion.button>
           <motion.button
             onClick={() => setActiveTab('achievements')}
-            className={`flex-1 py-4 rounded-2xl transition-all ${
-              activeTab === 'achievements'
-                ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white shadow-lg'
-                : 'bg-white/80 text-[#003B73] border border-[#003B73]/10'
-            }`}
+            className={`flex-1 py-4 rounded-2xl transition-all ${activeTab === 'achievements'
+              ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white shadow-lg'
+              : 'bg-white/80 text-[#003B73] border border-[#003B73]/10'
+              }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -754,11 +686,10 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
                       transition={{ delay: 0.6 + index * 0.1 }}
                       whileHover={{ x: 5 }}
                     >
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        activity.type === 'quiz_taken' ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${activity.type === 'quiz_taken' ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
                         activity.type === 'quiz_created' ? 'bg-gradient-to-br from-purple-400 to-purple-600' :
-                        'bg-gradient-to-br from-yellow-400 to-yellow-600'
-                      }`}>
+                          'bg-gradient-to-br from-yellow-400 to-yellow-600'
+                        }`}>
                         {activity.type === 'quiz_taken' && <Target className="w-6 h-6 text-white" />}
                         {activity.type === 'quiz_created' && <Brain className="w-6 h-6 text-white" />}
                         {activity.type === 'achievement' && <Trophy className="w-6 h-6 text-white" />}
@@ -841,10 +772,10 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
                   <Card className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10">
                     <CardHeader>
                       <CardTitle className="text-[#003B73] text-2xl">Performance by Category</CardTitle>
-                       <p className="text-[#003B73]/70">Summary of all completed quizzes</p>
+                      <p className="text-[#003B73]/70">Summary of all completed quizzes</p>
                     </CardHeader>
                     <CardContent className="h-[400px] w-full">
-                       <BarJS
+                      <BarJS
                         data={categoryBarData}
                         options={{
                           responsive: true,
@@ -894,27 +825,25 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
               <Trophy className="w-8 h-8 text-[#003B73]" />
               <div>
                 <h2 className="text-[#003B73] text-2xl">Achievements & Badges</h2>
-                <p className="text-[#003B73]/60">{achievements.filter(a => a.unlocked).length} of {achievements.length} unlocked</p>
+                <p className="text-[#003B73]/60">{achievementsList.filter(a => a.unlocked).length} of {achievementsList.length} unlocked</p>
               </div>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {achievements.map((achievement, index) => (
+              {achievementsList.map((achievement, index) => (
                 <motion.div
                   key={achievement.id}
-                  className={`p-6 rounded-2xl border-2 transition-all ${
-                    achievement.unlocked
-                      ? 'bg-gradient-to-br from-white to-[#DFF4FF]/30 border-[#003B73]/20 shadow-lg'
-                      : 'bg-white/40 border-[#003B73]/10 opacity-60'
-                  }`}
+                  className={`p-6 rounded-2xl border-2 transition-all ${achievement.unlocked
+                    ? 'bg-gradient-to-br from-white to-[#DFF4FF]/30 border-[#003B73]/20 shadow-lg'
+                    : 'bg-white/40 border-[#003B73]/10 opacity-60'
+                    }`}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: index * 0.1 }}
                   whileHover={{ scale: achievement.unlocked ? 1.05 : 1, y: achievement.unlocked ? -5 : 0 }}
                 >
-                  <div className={`w-16 h-16 bg-gradient-to-br ${achievement.color} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg ${
-                    !achievement.unlocked && 'grayscale'
-                  }`}>
+                  <div className={`w-16 h-16 bg-gradient-to-br ${achievement.color} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg ${!achievement.unlocked && 'grayscale'
+                    }`}>
                     <achievement.icon className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-[#003B73] text-center mb-2">{achievement.title}</h3>

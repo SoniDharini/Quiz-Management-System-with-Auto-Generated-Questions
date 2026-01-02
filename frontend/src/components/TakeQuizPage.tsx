@@ -56,7 +56,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [numQuestions, setNumQuestions] = useState<string>('10');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-  
+
   // Quiz state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
@@ -75,7 +75,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [quizResults, setQuizResults] = useState<any>(null);
   const [recommendedQuizzes, setRecommendedQuizzes] = useState<any[]>([]);
-  const [streakInfo, setStreakInfo] = useState<{lost: boolean, current: number} | null>(null);
+  const [streakInfo, setStreakInfo] = useState<{ lost: boolean, current: number } | null>(null);
 
   // Load recommended quizzes on mount
   useEffect(() => {
@@ -108,17 +108,17 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
         setIsLoading(false);
       }
     };
-    
+
     if (currentStep === 'category') {
       fetchCategories();
     }
   }, [currentStep]);
-// If a quiz ID is preselected, check for saved state or load the quiz
+  // If a quiz ID is preselected, check for saved state or load the quiz
   useEffect(() => {
     const initializeQuiz = async () => {
       if (preselectedQuizId && preselectedQuizId > 0) {
         const savedState = loadQuizState();
-        
+
         // If there's a saved state for this specific quiz, restore it
         if (savedState && savedState.quizId === preselectedQuizId) {
           console.log('Restoring saved quiz state:', savedState);
@@ -182,7 +182,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
       setIsLoadingQuiz(true);
       const quizData = await quizAPI.getQuizToTake(quizId);
       setLoadedQuiz(quizData);
-      
+
       // Set metadata for navigation and display
       setSelectedCategory(quizData.category.toString());
       setSelectedSubcategory(quizData.level.toString());
@@ -203,7 +203,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
         setCurrentQuestionIndex(0);
         clearQuizState(); // Clear any previous state
       }
-      
+
       setCurrentStep('quiz');
       setIsPaused(false); // Ensure quiz is not paused on load
     } catch (error) {
@@ -311,7 +311,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
       { id: 9, question: 'The law of conservation of energy states that energy can be:', options: ['Created only', 'Destroyed only', 'Neither created nor destroyed', 'Both created and destroyed'], correctAnswer: 2 },
       { id: 10, question: 'What is the principle on which a lever works?', options: ['Moment of force', 'Conservation of energy', 'Newton\'s third law', 'Archimedes principle'], correctAnswer: 0 }
     ],
-    
+
     // ACADEMICS - 10th Grade Chemistry
     'Chemistry-10th': [
       { id: 1, question: 'What is the chemical symbol for Gold?', options: ['Go', 'Au', 'Gd', 'Ag'], correctAnswer: 1 },
@@ -325,7 +325,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
       { id: 9, question: 'The molecular formula of methane is:', options: ['CH₄', 'C₂H₆', 'C₃H₈', 'C₄H₁₀'], correctAnswer: 0 },
       { id: 10, question: 'What is the process of converting solid directly to gas called?', options: ['Evaporation', 'Sublimation', 'Condensation', 'Deposition'], correctAnswer: 1 }
     ],
-    
+
     // ACADEMICS - 10th Grade Mathematics
     'Mathematics-10th': [
       { id: 1, question: 'What is the square root of 144?', options: ['10', '11', '12', '13'], correctAnswer: 2 },
@@ -339,7 +339,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
       { id: 9, question: 'The slope of a horizontal line is:', options: ['0', '1', 'Undefined', 'Infinite'], correctAnswer: 0 },
       { id: 10, question: 'What is the value of sin 90°?', options: ['0', '0.5', '1', '√3/2'], correctAnswer: 2 }
     ],
-    
+
     // ACADEMICS - 10th Grade Biology
     'Biology-10th': [
       { id: 1, question: 'What is the powerhouse of the cell?', options: ['Nucleus', 'Mitochondria', 'Ribosome', 'Chloroplast'], correctAnswer: 1 },
@@ -513,23 +513,23 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
   const getQuizQuestions = (): QuizQuestion[] => {
     // Build the key based on subject and subcategory (grade level)
     let key = selectedSubject;
-    
+
     // For academic subjects, append the grade level
     if (selectedCategory === 'academics') {
       if (['Physics', 'Chemistry', 'Mathematics', 'Biology'].includes(selectedSubject)) {
         key = `${selectedSubject}-${selectedSubcategory}`;
       }
     }
-    
+
     const availableQuestions = questionBank[key] || questionBank['Data Structures'] || [];
     const requestedCount = parseInt(numQuestions) || 10;
-    
+
     // Return requested number of questions (cycle if needed)
     const questions: QuizQuestion[] = [];
     for (let i = 0; i < requestedCount; i++) {
       questions.push(availableQuestions[i % availableQuestions.length]);
     }
-  
+
     return questions.map((q, idx) => ({ ...q, id: idx + 1 }));
   };
 
@@ -570,22 +570,22 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
     try {
       setIsGeneratingQuiz(true);
       const subjectId = parseInt(selectedSubject);
-      
+
       console.log('Generating quiz with params:', {
         subjectId,
         difficulty,
         numQuestions: parseInt(numQuestions)
       });
-      
+
       const result = await quizAPI.generateQuizFromSubject(
         subjectId,
         difficulty,
         parseInt(numQuestions)
       );
-      
+
       console.log('Quiz generation result:', result);
       console.log('Quiz ID:', result.quiz_id);
-      
+
       // Load the generated quiz
       if (result.quiz_id) {
         // Before loading a new quiz, check if another is in progress
@@ -612,7 +612,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
 
   const handlePauseQuiz = () => {
     if (!loadedQuiz) return;
-    
+
     saveQuizState({
       quizId: loadedQuiz.id,
       currentQuestionIndex,
@@ -620,7 +620,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
       remainingTime: timeLeft,
       attemptId,
     });
-    
+
     setIsPaused(true);
     // onBack(); // or navigate to a specific "paused" screen
     navigate('/');
@@ -782,7 +782,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
               return GraduationCap;
             };
             const IconComponent = getIcon(category.name);
-            
+
             return (
               <motion.div
                 key={category.id}
@@ -790,44 +790,44 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
                 className="group relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 border-2 border-[#003B73]/10 shadow-xl hover:shadow-2xl transition-all cursor-pointer overflow-hidden"
                 whileHover={{ y: -8, scale: 1.03 }}
                 initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#003B73]/5 to-[#B9E7FF]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="relative z-10">
-                <motion.div
-                  className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg mx-auto"
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <IconComponent className="w-10 h-10 text-white" />
-                </motion.div>
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-[#003B73]/5 to-[#B9E7FF]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                <h2 className="text-[#003B73] text-center mb-3">{category.name}</h2>
-                <p className="text-[#003B73]/70 text-center mb-4">
-                  {category.description || 'Explore this category'}
-                </p>
-
-                <div className="flex justify-center">
+                <div className="relative z-10">
                   <motion.div
-                    className="flex items-center gap-2 text-[#003B73]"
-                    whileHover={{ x: 5 }}
+                    className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg mx-auto"
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.6 }}
                   >
-                    <span>Explore</span>
-                    <ChevronRight className="w-4 h-4" />
+                    <IconComponent className="w-10 h-10 text-white" />
                   </motion.div>
-                </div>
-              </div>
 
-              <motion.div
-                className="absolute -bottom-4 -right-4 w-32 h-32 bg-[#003B73]/5 rounded-full blur-2xl"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              />
-            </motion.div>
-          );
-        }) 
+                  <h2 className="text-[#003B73] text-center mb-3">{category.name}</h2>
+                  <p className="text-[#003B73]/70 text-center mb-4">
+                    {category.description || 'Explore this category'}
+                  </p>
+
+                  <div className="flex justify-center">
+                    <motion.div
+                      className="flex items-center gap-2 text-[#003B73]"
+                      whileHover={{ x: 5 }}
+                    >
+                      <span>Explore</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </motion.div>
+                  </div>
+                </div>
+
+                <motion.div
+                  className="absolute -bottom-4 -right-4 w-32 h-32 bg-[#003B73]/5 rounded-full blur-2xl"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                />
+              </motion.div>
+            );
+          })
         )}
       </div>
     </motion.div>
@@ -944,9 +944,9 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
                 </p>
 
                 <div className="flex justify-center gap-2">
-                <span className="px-2 py-1 bg-[#DFF4FF] text-[#003B73] rounded-lg border border-[#003B73]/10">
-                  Medium
-                </span>
+                  <span className="px-2 py-1 bg-[#DFF4FF] text-[#003B73] rounded-lg border border-[#003B73]/10">
+                    Medium
+                  </span>
                   <span className="px-2 py-1 bg-[#DFF4FF] text-[#003B73] rounded-lg border border-[#003B73]/10 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     10 min
@@ -1012,33 +1012,29 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
                 <motion.button
                   key={level}
                   onClick={() => setDifficulty(level)}
-                  className={`py-4 rounded-2xl transition-all ${ 
-                    difficulty === level
+                  className={`py-4 rounded-2xl transition-all ${difficulty === level
                       ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white shadow-lg border-2 border-[#003B73]'
                       : 'bg-white border-2 border-[#003B73]/20 text-[#003B73] hover:border-[#003B73]/40 hover:shadow-md'
-                  }`}
+                    }`}
                   whileHover={{ scale: 1.05, y: -3 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <div className="flex flex-col items-center gap-2">
                     {level === 'easy' && (
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${ 
-                        difficulty === level ? 'bg-white/20' : 'bg-green-100'
-                      }`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${difficulty === level ? 'bg-white/20' : 'bg-green-100'
+                        }`}>
                         <span className={difficulty === level ? 'text-white' : 'text-green-600'}>😊</span>
                       </div>
                     )}
                     {level === 'medium' && (
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${ 
-                        difficulty === level ? 'bg-white/20' : 'bg-yellow-100'
-                      }`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${difficulty === level ? 'bg-white/20' : 'bg-yellow-100'
+                        }`}>
                         <span className={difficulty === level ? 'text-white' : 'text-yellow-600'}>🤔</span>
                       </div>
                     )}
                     {level === 'hard' && (
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${ 
-                        difficulty === level ? 'bg-white/20' : 'bg-red-100'
-                      }`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${difficulty === level ? 'bg-white/20' : 'bg-red-100'
+                        }`}>
                         <span className={difficulty === level ? 'text-white' : 'text-red-600'}>🔥</span>
                       </div>
                     )}
@@ -1098,11 +1094,10 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
           <motion.button
             onClick={handleGenerateQuiz}
             disabled={isGeneratingQuiz || !numQuestions || parseInt(numQuestions) < 5 || parseInt(numQuestions) > 100}
-            className={`flex items-center gap-3 px-10 py-5 rounded-2xl shadow-lg transition-all ${ 
-              !isGeneratingQuiz && numQuestions && parseInt(numQuestions) >= 5 && parseInt(numQuestions) <= 100
+            className={`flex items-center gap-3 px-10 py-5 rounded-2xl shadow-lg transition-all ${!isGeneratingQuiz && numQuestions && parseInt(numQuestions) >= 5 && parseInt(numQuestions) <= 100
                 ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white hover:shadow-xl'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
+              }`}
             whileHover={!isGeneratingQuiz && numQuestions && parseInt(numQuestions) >= 5 && parseInt(numQuestions) <= 100 ? { scale: 1.05 } : {}}
             whileTap={!isGeneratingQuiz && numQuestions && parseInt(numQuestions) >= 5 && parseInt(numQuestions) <= 100 ? { scale: 0.95 } : {}}
           >
@@ -1199,25 +1194,23 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
 
             {/* Options */}
             <div className="space-y-4">
-              {currentQuestion.options.map((option, index) => {
+              {currentQuestion.options.map((option: string, index: number) => {
                 const isSelected = selectedAnswers[currentQuestionIndex] === index;
-                
+
                 return (
                   <motion.button
                     key={index}
                     onClick={() => handleAnswerSelect(index)}
-                    className={`w-full p-6 rounded-2xl border-2 transition-all text-left ${ 
-                      isSelected
+                    className={`w-full p-6 rounded-2xl border-2 transition-all text-left ${isSelected
                         ? 'bg-gradient-to-r from-[#003B73] to-[#0056A8] border-[#003B73] text-white shadow-lg'
                         : 'bg-white/50 border-[#003B73]/10 text-[#003B73] hover:border-[#003B73]/30 hover:shadow-md'
-                    }`}
+                      }`}
                     whileHover={{ scale: 1.02, x: 5 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${ 
-                        isSelected ? 'border-white bg-white/20' : 'border-[#003B73]/30'
-                      }`}>
+                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-white bg-white/20' : 'border-[#003B73]/30'
+                        }`}>
                         <span className={isSelected ? 'text-white' : 'text-[#003B73]/60'}>
                           {String.fromCharCode(65 + index)}
                         </span>
@@ -1236,11 +1229,10 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
           <motion.button
             onClick={handlePreviousQuestion}
             disabled={currentQuestionIndex === 0}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all ${ 
-              currentQuestionIndex === 0
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all ${currentQuestionIndex === 0
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 : 'bg-white text-[#003B73] border-2 border-[#003B73]/20 hover:shadow-lg'
-            }`}
+              }`}
             whileHover={currentQuestionIndex > 0 ? { scale: 1.05 } : {}}
             whileTap={currentQuestionIndex > 0 ? { scale: 0.95 } : {}}
           >
@@ -1262,11 +1254,10 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
               <motion.button
                 onClick={handleSubmitQuiz}
                 disabled={Object.keys(selectedAnswers).length !== quizQuestions.length}
-                className={`flex items-center gap-2 px-8 py-3 rounded-xl shadow-lg transition-all ${ 
-                  Object.keys(selectedAnswers).length === quizQuestions.length
+                className={`flex items-center gap-2 px-8 py-3 rounded-xl shadow-lg transition-all ${Object.keys(selectedAnswers).length === quizQuestions.length
                     ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:shadow-xl'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                  }`}
                 whileHover={Object.keys(selectedAnswers).length === quizQuestions.length ? { scale: 1.05 } : {}}
                 whileTap={Object.keys(selectedAnswers).length === quizQuestions.length ? { scale: 0.95 } : {}}
               >
@@ -1291,21 +1282,20 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
         <div className="mt-8 bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-[#003B73]/10">
           <h4 className="text-[#003B73] mb-4">Question Navigator</h4>
           <div className="grid grid-cols-10 gap-2">
-            {quizQuestions.map((_, index) => {
+            {quizQuestions.map((_: any, index: number) => {
               const isAnswered = selectedAnswers[index] !== undefined;
               const isCurrent = index === currentQuestionIndex;
-              
+
               return (
                 <motion.button
                   key={index}
                   onClick={() => setCurrentQuestionIndex(index)}
-                  className={`w-10 h-10 rounded-lg border-2 transition-all ${ 
-                    isCurrent
+                  className={`w-10 h-10 rounded-lg border-2 transition-all ${isCurrent
                       ? 'bg-gradient-to-br from-[#003B73] to-[#0056A8] border-[#003B73] text-white shadow-md'
                       : isAnswered
-                      ? 'bg-green-100 border-green-300 text-green-700'
-                      : 'bg-white border-[#003B73]/20 text-[#003B73]/60 hover:border-[#003B73]/40'
-                  }`}
+                        ? 'bg-green-100 border-green-300 text-green-700'
+                        : 'bg-white border-[#003B73]/20 text-[#003B73]/60 hover:border-[#003B73]/40'
+                    }`}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                 >
@@ -1352,11 +1342,10 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
             transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
             className="mb-6"
           >
-            <div className={`w-32 h-32 mx-auto rounded-full flex items-center justify-center shadow-2xl ${ 
-              isPassed
+            <div className={`w-32 h-32 mx-auto rounded-full flex items-center justify-center shadow-2xl ${isPassed
                 ? 'bg-gradient-to-br from-green-400 to-green-600'
                 : 'bg-gradient-to-br from-orange-400 to-orange-600'
-            }`}>
+              }`}>
               {isPassed ? (
                 <Trophy className="w-16 h-16 text-white" />
               ) : (
@@ -1373,7 +1362,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
           >
             {isPassed ? 'Congratulations!' : 'Good Effort!'}
           </motion.h1>
-          
+
           {streakInfo && streakInfo.lost && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-[#003B73]/70">
               You lost your previous streak, but you've started a new one of {streakInfo.current} day!
@@ -1391,7 +1380,7 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
             transition={{ delay: 0.4 }}
             className="text-[#003B73]/70"
           >
-            {isPassed 
+            {isPassed
               ? 'You passed the quiz! Keep up the excellent work.'
               : 'Keep practicing to improve your score.'}
           </motion.p>
@@ -1455,16 +1444,14 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
               return (
                 <div
                   key={question.id}
-                  className={`p-4 rounded-xl border-2 ${ 
-                    isCorrect
+                  className={`p-4 rounded-xl border-2 ${isCorrect
                       ? 'bg-green-50 border-green-200'
                       : 'bg-red-50 border-red-200'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${ 
-                      isCorrect ? 'bg-green-500' : 'bg-red-500'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isCorrect ? 'bg-green-500' : 'bg-red-500'
+                      }`}>
                       {isCorrect ? (
                         <CheckCircle2 className="w-5 h-5 text-white" />
                       ) : (
@@ -1576,18 +1563,18 @@ export function TakeQuizPage({ onBack }: TakeQuizPageProps) {
               />
               <p className="text-[#003B73] text-lg">Loading your quiz...</p>
             </div>
-                      ) : (
-                      <>
-                        {currentStep === 'category' && recommendedQuizzes.length > 0 && renderRecommendedQuizzes()}
-                        {currentStep === 'category' && renderCategorySelection()}
-                        {currentStep === 'subcategory' && renderSubcategorySelection()}
-                        {currentStep === 'subject' && renderSubjectSelection()}
-                        {currentStep === 'configure' && renderQuizConfig()}
-                        {currentStep === 'quiz' && renderQuiz()}
-                        {currentStep === 'results' && renderResults()}
-                      </>
-                    )}
-                  </AnimatePresence>
-                </main>    </div>
+          ) : (
+            <>
+              {currentStep === 'category' && recommendedQuizzes.length > 0 && renderRecommendedQuizzes()}
+              {currentStep === 'category' && renderCategorySelection()}
+              {currentStep === 'subcategory' && renderSubcategorySelection()}
+              {currentStep === 'subject' && renderSubjectSelection()}
+              {currentStep === 'configure' && renderQuizConfig()}
+              {currentStep === 'quiz' && renderQuiz()}
+              {currentStep === 'results' && renderResults()}
+            </>
+          )}
+        </AnimatePresence>
+      </main>    </div>
   );
 }

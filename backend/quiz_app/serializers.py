@@ -29,7 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
         validated_data.pop('password2')
         user = User.objects.create_user(**validated_data)
         # Create associated profile
-        UserProfile.objects.create(user=user)
+        # UserProfile creation is handled by post_save signal
         QuizAnalytics.objects.create(user=user)
         return user
 
