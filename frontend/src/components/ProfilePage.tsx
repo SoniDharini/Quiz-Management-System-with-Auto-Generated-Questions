@@ -60,6 +60,7 @@ interface QuizAttempt {
   score_percentage: number; // Keep for calculations if needed
   formatted_score_percentage: string; // New field for display
   completed_at: string; // Assuming ISO string format
+  quiz_category?: string;
 }
 
 interface PerformanceChartData {
@@ -230,6 +231,73 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
 
     fetchUserData();
   }, []);
+
+  // Process data for charts whenever quizHistory changes
+  useEffect(() => {
+    if (!quizHistory || quizHistory.length === 0) {
+      setOverallMetrics(null);
+      setQuizzesByCategoryPieData(null);
+      setCategoryBarData(null);
+      return;
+    }
+
+    // Calculate overall metrics
+    const totalScore = quizHistory.reduce((acc, curr) => acc + (curr.score_percentage || 0), 0);
+    const average = totalScore / quizHistory.length;
+    const highest = Math.max(...quizHistory.map(q => q.score_percentage || 0));
+
+    setOverallMetrics({ average, highest });
+
+    // Group by category
+    const categoryStats: Record<string, { count: number; totalScore: number }> = {};
+
+    quizHistory.forEach(quiz => {
+      const category = quiz.quiz_category || 'Uncategorized';
+      if (!categoryStats[category]) {
+        categoryStats[category] = { count: 0, totalScore: 0 };
+      }
+      categoryStats[category].count += 1;
+      categoryStats[category].totalScore += (quiz.score_percentage || 0);
+    });
+
+    const categories = Object.keys(categoryStats);
+    const counts = categories.map(c => categoryStats[c].count);
+    const avgScores = categories.map(c => categoryStats[c].totalScore / categoryStats[c].count);
+
+    // Set Pie Data
+    setQuizzesByCategoryPieData({
+      labels: categories,
+      datasets: [{
+        label: 'Quizzes Taken',
+        data: counts,
+        backgroundColor: [
+          '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+          '#C9CBCF', '#4BC0C0', '#FF9F40', '#9966FF', '#FF6384', '#36A2EB'
+        ],
+        borderColor: '#ffffff',
+        borderWidth: 2
+      }]
+    });
+
+    // Set Bar Data
+    setCategoryBarData({
+      labels: categories,
+      datasets: [
+        {
+          label: 'Average Score (%)',
+          data: avgScores,
+          backgroundColor: 'rgba(54, 162, 235, 0.8)',
+          yAxisID: 'y-axis-scores'
+        },
+        {
+          label: 'Quizzes Taken',
+          data: counts,
+          backgroundColor: 'rgba(255, 206, 86, 0.8)',
+          yAxisID: 'y-axis-count'
+        }
+      ]
+    });
+  }, [quizHistory]);
 
   // Show loading state
   if (isLoading || !userData) {

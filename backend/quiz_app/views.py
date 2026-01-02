@@ -1180,7 +1180,7 @@ class UserQuizHistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        attempts = QuizAttempt.objects.filter(user=request.user, quiz__is_temporary=False).select_related('quiz')
+        attempts = QuizAttempt.objects.filter(user=request.user, quiz__is_temporary=False).select_related('quiz', 'quiz__category')
         serializer = QuizAttemptSerializer(attempts, many=True)
         return Response(serializer.data)
 

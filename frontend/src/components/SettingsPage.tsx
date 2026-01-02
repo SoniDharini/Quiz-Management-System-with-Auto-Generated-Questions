@@ -14,7 +14,13 @@ import {
     Globe,
     Lock,
     Trash2,
-    Sliders
+    ThumbsUp,
+    AtSign,
+    FileText,
+    Eye,
+    Sliders,
+    Zap,
+    Target
 } from 'lucide-react';
 import { userAPI, authAPI } from '../services/api';
 
@@ -219,7 +225,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                             className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-[#003B73]/10"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3 }}
+                            transition={{ duration: 0.4, ease: "easeOut" }}
                         >
                             <div className="mb-6 flex justify-between items-center">
                                 <div>
@@ -268,96 +274,202 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
 
                             {/* Profile Tab */}
                             {activeTab === 'profile' && (
-                                <div className="space-y-6 max-w-2xl">
+                                <motion.div
+                                    className="space-y-6 max-w-2xl"
+                                    variants={{
+                                        hidden: { opacity: 0 },
+                                        visible: {
+                                            opacity: 1,
+                                            transition: { staggerChildren: 0.1 }
+                                        }
+                                    }}
+                                    initial="hidden"
+                                    animate="visible"
+                                >
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-[#003B73]/70 mb-2">Username</label>
-                                            <input type="text" value={profileData.username} disabled className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-500 cursor-not-allowed" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-[#003B73]/70 mb-2">Email</label>
-                                            <input type="email" value={profileData.email} disabled className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-500 cursor-not-allowed" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-[#003B73] mb-2">Full Name</label>
-                                        <input type="text" value={profileData.full_name} onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-white border border-[#003B73]/20 focus:outline-none focus:ring-2 focus:ring-[#003B73]/20 text-[#003B73]" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-[#003B73] mb-2">Bio</label>
-                                        <textarea value={profileData.bio} onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-white border border-[#003B73]/20 focus:outline-none focus:ring-2 focus:ring-[#003B73]/20 text-[#003B73] min-h-[120px]" />
+                                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                                            <label className="block text-sm font-medium text-[#003B73]/70 mb-2 ml-1">Username</label>
+                                            <div className="relative group">
+                                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#003B73]/40 group-hover:text-[#003B73]/60 transition-colors" />
+                                                <input
+                                                    type="text"
+                                                    value={profileData.username}
+                                                    disabled
+                                                    className="w-full pl-12 pr-28 py-3.5 rounded-2xl bg-gray-50/50 border border-gray-200 text-gray-500 font-medium cursor-not-allowed transition-all truncate"
+                                                />
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                                    <div className="px-2 py-1 bg-gray-100 rounded text-xs font-medium text-gray-500">Read-only</div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+
+                                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                                            <label className="block text-sm font-medium text-[#003B73]/70 mb-2 ml-1">Email</label>
+                                            <div className="relative group">
+                                                <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#003B73]/40 group-hover:text-[#003B73]/60 transition-colors" />
+                                                <input
+                                                    type="email"
+                                                    value={profileData.email}
+                                                    disabled
+                                                    className="w-full pl-12 pr-28 py-3.5 rounded-2xl bg-gray-50/50 border border-gray-200 text-gray-500 font-medium cursor-not-allowed transition-all truncate"
+                                                />
+                                            </div>
+                                        </motion.div>
                                     </div>
 
-                                    <div className="border-t border-[#003B73]/10 pt-6 mt-8">
-                                        <h3 className="text-red-600 font-bold mb-2">Danger Zone</h3>
-                                        <div className="flex items-center justify-between p-4 bg-red-50 rounded-xl border border-red-100">
+                                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                                        <label className="block text-sm font-medium text-[#003B73] mb-2 ml-1">Full Name</label>
+                                        <div className="relative group">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#003B73]/40 group-focus-within:text-[#003B73] transition-colors">
+                                                <Target className="w-full h-full" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={profileData.full_name}
+                                                onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
+                                                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/50 border border-[#003B73]/10 focus:border-[#003B73]/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#003B73]/5 text-[#003B73] font-medium placeholder-[#003B73]/30 transition-all shadow-sm hover:shadow"
+                                                placeholder="Enter your full name"
+                                            />
+                                        </div>
+                                    </motion.div>
+
+                                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                                        <label className="block text-sm font-medium text-[#003B73] mb-2 ml-1">Bio</label>
+                                        <div className="relative group">
+                                            <FileText className="absolute left-4 top-6 w-5 h-5 text-[#003B73]/40 group-focus-within:text-[#003B73] transition-colors" />
+                                            <textarea
+                                                value={profileData.bio}
+                                                onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                                                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/50 border border-[#003B73]/10 focus:border-[#003B73]/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#003B73]/5 text-[#003B73] font-medium placeholder-[#003B73]/30 transition-all shadow-sm hover:shadow min-h-[120px] resize-y"
+                                                placeholder="Tell us a bit about yourself..."
+                                            />
+                                        </div>
+                                    </motion.div>
+
+                                    <motion.div
+                                        className="border-t border-[#003B73]/10 pt-8 mt-8"
+                                        variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                                    >
+                                        <h3 className="text-red-600 font-bold mb-4 flex items-center gap-2">
+                                            <AlertCircle className="w-5 h-5" />
+                                            Danger Zone
+                                        </h3>
+                                        <div className="flex items-center justify-between p-6 bg-red-50/50 rounded-2xl border border-red-100/50 hover:border-red-200 transition-colors group">
                                             <div>
-                                                <p className="text-red-800 font-medium">Delete Account</p>
+                                                <p className="text-red-900 font-semibold mb-1">Delete Account</p>
                                                 <p className="text-sm text-red-600/70">Permanently remove your account and all data</p>
                                             </div>
-                                            <button onClick={() => setShowDeleteConfirm(true)} className="px-4 py-2 bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium">
+                                            <button
+                                                onClick={() => setShowDeleteConfirm(true)}
+                                                className="px-6 py-2.5 bg-white text-red-600 border border-red-200 rounded-xl hover:bg-red-600 hover:text-white hover:border-red-600 transition-all shadow-sm font-medium"
+                                            >
                                                 Delete Account
                                             </button>
                                         </div>
-                                    </div>
-                                </div>
+                                    </motion.div>
+                                </motion.div>
                             )}
 
                             {/* Preferences Tab */}
                             {activeTab === 'preferences' && (
-                                <div className="space-y-6 max-w-2xl">
-                                    <div>
-                                        <label className="block text-sm font-medium text-[#003B73] mb-3">Color Theme</label>
+                                <motion.div
+                                    className="space-y-6 max-w-2xl"
+                                    variants={{
+                                        hidden: { opacity: 0 },
+                                        visible: {
+                                            opacity: 1,
+                                            transition: { staggerChildren: 0.1 }
+                                        }
+                                    }}
+                                    initial="hidden"
+                                    animate="visible"
+                                >
+                                    <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                                        <label className="block text-sm font-medium text-[#003B73] mb-3 ml-1">Color Theme</label>
                                         <div className="grid grid-cols-2 gap-4">
                                             <button
                                                 onClick={() => setPreferences({ ...preferences, theme_preference: 'light' })}
-                                                className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${preferences.theme_preference === 'light' ? 'border-[#003B73] bg-[#DFF4FF]' : 'border-gray-200 hover:border-[#003B73]/50'}`}
+                                                className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${preferences.theme_preference === 'light' ? 'border-[#003B73] bg-[#DFF4FF] shadow-md transform scale-[1.02]' : 'border-gray-200 hover:border-[#003B73]/50 hover:bg-white/50'}`}
                                             >
                                                 <Sun className="w-6 h-6 text-[#003B73]" />
                                                 <span className="font-medium text-[#003B73]">Light Mode</span>
                                             </button>
                                             <button
                                                 onClick={() => setPreferences({ ...preferences, theme_preference: 'dark' })}
-                                                className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${preferences.theme_preference === 'dark' ? 'border-[#003B73] bg-[#003B73] text-white' : 'border-gray-200 hover:border-[#003B73]/50 text-gray-500'}`}
+                                                className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${preferences.theme_preference === 'dark' ? 'border-[#003B73] bg-[#003B73] text-white shadow-md transform scale-[1.02]' : 'border-gray-200 hover:border-[#003B73]/50 hover:bg-white/50 text-gray-500'}`}
                                             >
                                                 <Moon className="w-6 h-6" />
                                                 <span className="font-medium">Dark Mode</span>
                                             </button>
                                         </div>
-                                    </div>
-                                </div>
+                                    </motion.div>
+                                </motion.div>
                             )}
 
                             {/* Notifications Tab */}
                             {activeTab === 'notifications' && (
-                                <div className="space-y-4 max-w-2xl">
-                                    {[['email_notifications', 'Email Notifications', 'Receive updates about your quiz performance'],
-                                    ['push_notifications', 'Push Notifications', 'Get notified when new quizzes are available'],
-                                    ['streak_reminders', 'Streak Reminders', 'Get a daily reminder to keep your streak alive']
-                                    ].map(([key, label, desc]) => (
-                                        <div key={key} className="flex items-center justify-between p-4 bg-white/50 rounded-xl border border-[#003B73]/10">
-                                            <div>
-                                                <h3 className="text-[#003B73] font-medium">{label}</h3>
-                                                <p className="text-sm text-[#003B73]/60">{desc}</p>
+                                <motion.div
+                                    className="space-y-4 max-w-2xl"
+                                    variants={{
+                                        hidden: { opacity: 0 },
+                                        visible: {
+                                            opacity: 1,
+                                            transition: { staggerChildren: 0.1 }
+                                        }
+                                    }}
+                                    initial="hidden"
+                                    animate="visible"
+                                >
+                                    {[['email_notifications', 'Email Notifications', 'Receive updates about your quiz performance', <AtSign key="email" className="w-5 h-5" />],
+                                    ['push_notifications', 'Push Notifications', 'Get notified when new quizzes are available', <Bell key="push" className="w-5 h-5" />],
+                                    ['streak_reminders', 'Streak Reminders', 'Get a daily reminder to keep your streak alive', <Zap key="streak" className="w-5 h-5" />]
+                                    ].map(([key, label, desc, icon]) => (
+                                        <motion.div
+                                            key={key as string}
+                                            variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                                            className="flex items-center justify-between p-4 bg-white/50 rounded-xl border border-[#003B73]/10 hover:shadow-md transition-all"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-[#DFF4FF] rounded-lg text-[#003B73]">
+                                                    {icon}
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-[#003B73] font-medium">{label}</h3>
+                                                    <p className="text-sm text-[#003B73]/60">{desc}</p>
+                                                </div>
                                             </div>
                                             <label className="relative inline-flex items-center cursor-pointer">
                                                 <input
                                                     type="checkbox"
                                                     className="sr-only peer"
                                                     checked={notifications[key as keyof typeof notifications]}
-                                                    onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })}
+                                                    onChange={(e) => setNotifications({ ...notifications, [key as string]: e.target.checked })}
                                                 />
                                                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003B73]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003B73]"></div>
                                             </label>
-                                        </div>
+                                        </motion.div>
                                     ))}
-                                </div>
+                                </motion.div>
                             )}
 
                             {/* Privacy Tab */}
                             {activeTab === 'privacy' && (
-                                <div className="space-y-4 max-w-2xl">
-                                    <div className="flex items-center justify-between p-4 bg-white/50 rounded-xl border border-[#003B73]/10">
+                                <motion.div
+                                    className="space-y-4 max-w-2xl"
+                                    variants={{
+                                        hidden: { opacity: 0 },
+                                        visible: {
+                                            opacity: 1,
+                                            transition: { staggerChildren: 0.1 }
+                                        }
+                                    }}
+                                    initial="hidden"
+                                    animate="visible"
+                                >
+                                    <motion.div
+                                        className="flex items-center justify-between p-4 bg-white/50 rounded-xl border border-[#003B73]/10 hover:shadow-md transition-all"
+                                        variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                                    >
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-[#DFF4FF] rounded-lg text-[#003B73]">
                                                 <Globe className="w-5 h-5" />
@@ -376,12 +488,15 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                                             />
                                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003B73]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003B73]"></div>
                                         </label>
-                                    </div>
+                                    </motion.div>
 
-                                    <div className="flex items-center justify-between p-4 bg-white/50 rounded-xl border border-[#003B73]/10">
+                                    <motion.div
+                                        className="flex items-center justify-between p-4 bg-white/50 rounded-xl border border-[#003B73]/10 hover:shadow-md transition-all"
+                                        variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                                    >
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-[#DFF4FF] rounded-lg text-[#003B73]">
-                                                <Target className="w-5 h-5" /> {/* Placeholder icon */}
+                                                <Eye className="w-5 h-5" />
                                             </div>
                                             <div>
                                                 <h3 className="text-[#003B73] font-medium">Show Activity</h3>
@@ -397,32 +512,76 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                                             />
                                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#003B73]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003B73]"></div>
                                         </label>
-                                    </div>
-                                </div>
+                                    </motion.div>
+                                </motion.div>
                             )}
 
-                            {/* Security Tab - Reuse existing logic */}
+                            {/* Security Tab */}
                             {activeTab === 'security' && (
-                                <form onSubmit={handlePasswordChange} className="space-y-6 max-w-xl">
-                                    <div>
-                                        <label className="block text-sm font-medium text-[#003B73] mb-2">Current Password</label>
-                                        <input type="password" value={passwordData.oldPassword} onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-white border border-[#003B73]/20 focus:outline-none focus:ring-2 focus:ring-[#003B73]/20 text-[#003B73]" required />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-[#003B73] mb-2">New Password</label>
-                                        <input type="password" value={passwordData.newPassword} onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-white border border-[#003B73]/20 focus:outline-none focus:ring-2 focus:ring-[#003B73]/20 text-[#003B73]" required minLength={8} />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-[#003B73] mb-2">Confirm New Password</label>
-                                        <input type="password" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-white border border-[#003B73]/20 focus:outline-none focus:ring-2 focus:ring-[#003B73]/20 text-[#003B73]" required />
-                                    </div>
-                                    <div className="pt-4">
-                                        <motion.button type="submit" disabled={isLoading} className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-70" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                                            <span>Update Password</span>
-                                        </motion.button>
-                                    </div>
-                                </form>
+                                <motion.div
+                                    className="space-y-6 max-w-xl"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                >
+                                    <form onSubmit={handlePasswordChange} className="space-y-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-[#003B73] mb-2 ml-1">Current Password</label>
+                                            <div className="relative group">
+                                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#003B73]/40 group-focus-within:text-[#003B73] transition-colors" />
+                                                <input
+                                                    type="password"
+                                                    value={passwordData.oldPassword}
+                                                    onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
+                                                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/50 border border-[#003B73]/10 focus:border-[#003B73]/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#003B73]/5 text-[#003B73] font-medium placeholder-[#003B73]/30 transition-all shadow-sm hover:shadow"
+                                                    required
+                                                    placeholder="Enter current password"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-[#003B73] mb-2 ml-1">New Password</label>
+                                            <div className="relative group">
+                                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#003B73]/40 group-focus-within:text-[#003B73] transition-colors" />
+                                                <input
+                                                    type="password"
+                                                    value={passwordData.newPassword}
+                                                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/50 border border-[#003B73]/10 focus:border-[#003B73]/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#003B73]/5 text-[#003B73] font-medium placeholder-[#003B73]/30 transition-all shadow-sm hover:shadow"
+                                                    required
+                                                    minLength={8}
+                                                    placeholder="Enter new password (min. 8 chars)"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-[#003B73] mb-2 ml-1">Confirm New Password</label>
+                                            <div className="relative group">
+                                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#003B73]/40 group-focus-within:text-[#003B73] transition-colors" />
+                                                <input
+                                                    type="password"
+                                                    value={passwordData.confirmPassword}
+                                                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/50 border border-[#003B73]/10 focus:border-[#003B73]/30 focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#003B73]/5 text-[#003B73] font-medium placeholder-[#003B73]/30 transition-all shadow-sm hover:shadow"
+                                                    required
+                                                    placeholder="Confirm new password"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="pt-4">
+                                            <motion.button
+                                                type="submit"
+                                                disabled={isLoading}
+                                                className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-70"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                            >
+                                                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                                                <span>Update Password</span>
+                                            </motion.button>
+                                        </div>
+                                    </form>
+                                </motion.div>
                             )}
 
                             {/* Save Button for non-Security/Profile tabs (or just consistent footer) */}
@@ -483,7 +642,4 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
     );
 }
 
-// Helper component for placeholder icons
-const Target = ({ className }: { className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>
-);
+
