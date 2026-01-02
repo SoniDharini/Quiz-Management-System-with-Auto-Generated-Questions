@@ -1103,11 +1103,11 @@ class QuizSubmitView(APIView):
             except Question.DoesNotExist:
                 continue
         
-        # Calculate score and save attempt
+        # Calculate score
         attempt.calculate_score()
-        attempt.save()
         
         # If the quiz is temporary, don't update user profile stats
+        streak_lost = False
         if not quiz.is_temporary:
             # Update user profile
             profile = request.user.profile
@@ -1116,6 +1116,10 @@ class QuizSubmitView(APIView):
             profile.total_correct_answers += attempt.correct_answers
             profile.add_xp(attempt.xp_earned)
             profile.update_streak()
+            
+            # Save profile to ensure stats are updated before signal handlers run
+            profile.save()
+            
             streak_lost = getattr(profile, 'streak_was_just_reset', False)
             
             # Update analytics
@@ -1139,6 +1143,10 @@ class QuizSubmitView(APIView):
         else:
             profile = request.user.profile
             streak_lost = False # Default value for temporary quizzes
+
+        # Save attempt (Triggers post_save signal for achievements)
+        # We do this AFTER profile update so checks see correct stats
+        attempt.save()
 
         # Return results
         attempt_serializer = QuizAttemptSerializer(attempt)
@@ -1319,29 +1327,46 @@ class RecentActivityView(APIView):
             activities.append({
                 'id': f"achieve-{ua.id}",
                 'type': 'achievement',
-                'title': f"{ua.achievement.name} Unlocked",
+                'title': f"{ua.achievement.title} Unlocked",
                 'date_obj': ua.unlocked_at,
                 'xp': 100,  # Fixed XP for unlocking an achievement
             })
 
         # Sort all activities by date
-        activities.sort(key=lambda x: x['date_obj'], reverse=True)
+        # Filter out activities with no date_obj just in case
+        activities = [a for a in activities if a.get('date_obj')]
+        
+        try:
+            activities.sort(key=lambda x: x['date_obj'], reverse=True)
+        except Exception as e:
+            print(f"Error sorting activities: {e}")
         
         # Take the top 7 most recent activities
         recent_activities = activities[:7]
         
         # Format date for display
         for activity in recent_activities:
-            time_diff = now - activity['date_obj']
-            if time_diff.days > 0:
-                activity['date'] = f"{time_diff.days} days ago"
-            elif time_diff.seconds // 3600 > 0:
-                activity['date'] = f"{time_diff.seconds // 3600} hours ago"
-            elif time_diff.seconds // 60 > 0:
-                activity['date'] = f"{time_diff.seconds // 60} minutes ago"
-            else:
-                activity['date'] = "Just now"
-            del activity['date_obj']  # Remove temporary date object
+            try:
+                date_obj = activity['date_obj']
+                if timezone.is_naive(date_obj):
+                    date_obj = timezone.make_aware(date_obj)
+                
+                time_diff = now - date_obj
+                
+                if time_diff.days > 0:
+                    activity['date'] = f"{time_diff.days} days ago"
+                elif time_diff.seconds // 3600 > 0:
+                    activity['date'] = f"{time_diff.seconds // 3600} hours ago"
+                elif time_diff.seconds // 60 > 0:
+                    activity['date'] = f"{time_diff.seconds // 60} minutes ago"
+                else:
+                    activity['date'] = "Just now"
+            except Exception as e:
+                 print(f"Error formatting date for activity {activity.get('id')}: {e}")
+                 activity['date'] = "Unknown date"
+
+            if 'date_obj' in activity:
+                del activity['date_obj']  # Remove temporary date object
 
         serializer = RecentActivitySerializer(recent_activities, many=True)
         return Response(serializer.data)

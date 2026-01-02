@@ -677,41 +677,47 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
               <h2 className="text-[#003B73] mb-6 text-2xl">Recent Activity</h2>
               <div className="space-y-4">
                 {recentActivity && recentActivity.length > 0 ? (
-                  recentActivity.map((activity, index) => (
-                    <motion.div
-                      key={activity.id}
-                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-[#DFF4FF]/30 to-white rounded-2xl border border-[#003B73]/10 hover:shadow-lg transition-all"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.6 + index * 0.1 }}
-                      whileHover={{ x: 5 }}
-                    >
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${activity.type === 'quiz_taken' ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
-                        activity.type === 'quiz_created' ? 'bg-gradient-to-br from-purple-400 to-purple-600' :
-                          'bg-gradient-to-br from-yellow-400 to-yellow-600'
-                        }`}>
-                        {activity.type === 'quiz_taken' && <Target className="w-6 h-6 text-white" />}
-                        {activity.type === 'quiz_created' && <Brain className="w-6 h-6 text-white" />}
-                        {activity.type === 'achievement' && <Trophy className="w-6 h-6 text-white" />}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-[#003B73]">{activity.title}</h3>
-                        <div className="flex items-center gap-3 text-[#003B73]/60">
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            <span>{activity.date}</span>
-                          </div>
-                          {activity.score && (
-                            <span>Score: {activity.score}%</span>
-                          )}
+                  recentActivity
+                    .filter(activity => activity.type !== 'quiz_created')
+                    .map((activity, index) => (
+                      <motion.div
+                        key={activity.id}
+                        className="flex items-center gap-4 p-4 bg-gradient-to-r from-[#DFF4FF]/30 to-white rounded-2xl border border-[#003B73]/10 hover:shadow-lg transition-all"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.6 + index * 0.1 }}
+                        whileHover={{ x: 5 }}
+                      >
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${activity.type === 'quiz_taken' ? 'bg-gradient-to-br from-blue-400 to-blue-600' :
+                          activity.type === 'quiz_created' ? 'bg-gradient-to-br from-purple-400 to-purple-600' :
+                            'bg-gradient-to-br from-yellow-400 to-yellow-600'
+                          }`}>
+                          {activity.type === 'quiz_taken' && <Target className="w-6 h-6 text-white" />}
+                          {activity.type === 'quiz_created' && <Brain className="w-6 h-6 text-white" />}
+                          {activity.type === 'achievement' && <Trophy className="w-6 h-6 text-white" />}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-xl">
-                        <Zap className="w-4 h-4" />
-                        <span>+{activity.xp} XP</span>
-                      </div>
-                    </motion.div>
-                  ))
+                        <div className="flex-1">
+                          <h3 className="text-[#003B73]">
+                            {activity.type === 'quiz_created' && 'Created: '}
+                            {activity.type === 'quiz_taken' && 'Completed: '}
+                            {activity.title}
+                          </h3>
+                          <div className="flex items-center gap-3 text-[#003B73]/60">
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              <span>{activity.date}</span>
+                            </div>
+                            {activity.score && (
+                              <span>Score: {activity.score}%</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-xl">
+                          <Zap className="w-4 h-4" />
+                          <span>+{activity.xp} XP</span>
+                        </div>
+                      </motion.div>
+                    ))
                 ) : (
                   <div>
                     <p>No recent activity to show.</p>
