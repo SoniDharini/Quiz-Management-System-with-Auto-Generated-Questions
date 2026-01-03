@@ -480,6 +480,15 @@ export function CreateQuizPage({ onBack, onNavigateToTakeQuiz }: CreateQuizPageP
                 <CheckCircle className="w-12 h-12 text-white" />
               </motion.div>
               <h2 className="text-[#003B73] text-2xl mb-4">Quiz Generated Successfully!</h2>
+              {generatedQuiz.questions_count < parseInt(numQuestions) && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-orange-500 mb-4"
+                >
+                  Note: Only {generatedQuiz.questions_count} questions were generated out of your request for {parseInt(numQuestions)}.
+                </motion.p>
+              )}
               <p className="text-[#003B73]/70 mb-8">
                 Your AI-powered quiz is ready. {generatedQuiz.questions_count} multiple choice questions have been generated based on your material.
               </p>

@@ -16,6 +16,8 @@ from .views import (
     QuizStartView, QuizSubmitView, QuizAttemptDetailView, UserQuizHistoryView,
     # Analytics
     UserAnalyticsView, RecentActivityView, UserPerformanceView,
+    # Performance Dashboard
+    OverallPerformanceMetricsView, CategoryDistributionView, PerformanceByCategoryView, UserProgressView,
     # Achievements
     AchievementListView, UserAchievementsView,
     # Leaderboard
@@ -63,6 +65,13 @@ urlpatterns = [
     path('user/analytics/', UserAnalyticsView.as_view(), name='user-analytics'),
     path('user/activity/', RecentActivityView.as_view(), name='recent-activity'),
     path('user/performance/', UserPerformanceView.as_view(), name='user-performance'),
+
+    # Performance Dashboard endpoints
+    path('user/performance/overall/', OverallPerformanceMetricsView.as_view(), name='performance-overall'),
+    path('user/performance/category-distribution/', CategoryDistributionView.as_view(), name='performance-category-distribution'),
+    path('user/performance/by-category/', PerformanceByCategoryView.as_view(), name='performance-by-category'),
+    path('user/performance/progress/', UserProgressView.as_view(), name='performance-progress'),
+
     
     # Achievement endpoints
     path('achievements/', AchievementListView.as_view(), name='achievement-list'),
@@ -71,4 +80,3 @@ urlpatterns = [
     # Leaderboard endpoint
     path('leaderboard/', LeaderboardView.as_view(), name='leaderboard'),
 ]
-

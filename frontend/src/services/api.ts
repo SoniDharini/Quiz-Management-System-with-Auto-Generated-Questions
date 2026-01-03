@@ -119,6 +119,38 @@ export const userAPI = {
     return response.json();
   },
 
+  getOverallPerformance: async () => {
+    const response = await fetch(`${API_BASE_URL}/user/performance/overall/`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch overall performance');
+    return response.json();
+  },
+
+  getCategoryDistribution: async () => {
+    const response = await fetch(`${API_BASE_URL}/user/performance/category-distribution/`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch category distribution');
+    return response.json();
+  },
+
+  getPerformanceByCategory: async () => {
+    const response = await fetch(`${API_BASE_URL}/user/performance/by-category/`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch performance by category');
+    return response.json();
+  },
+
+  getUserProgress: async () => {
+    const response = await fetch(`${API_BASE_URL}/user/performance/progress/`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch user progress');
+    return response.json();
+  },
+
   getLeaderboard: async () => {
     const response = await fetch(`${API_BASE_URL}/leaderboard/`, {
       headers: getAuthHeaders()

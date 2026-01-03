@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models import Q, Count, Avg
+from django.db.models import Q, Count, Avg, Max
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics, viewsets
@@ -601,9 +601,10 @@ class QuizGenerateView(APIView):
                     - Provide clear explanations
                     """
                     
-                    max_tokens_per_question = 300
+                    max_tokens_per_question = 300 # Estimated tokens per question including options and explanation
                     calculated_max_tokens = num_to_generate * max_tokens_per_question
-                    max_tokens = min(calculated_max_tokens, 4000)
+                    max_tokens = min(calculated_max_tokens, 8000) # Increased max_tokens limit
+
 
                     response = get_openai_client().chat.completions.create(
                         model="gpt-3.5-turbo",
@@ -1334,6 +1335,96 @@ class UserPerformanceView(APIView):
         }
         return Response(data)
 
+# ==================== PERFORMANCE DASHBOARD VIEWS ====================
+
+class OverallPerformanceMetricsView(APIView):
+    """Get overall performance metrics for the authenticated user."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        completed_attempts = QuizAttempt.objects.filter(user=user, status='completed')
+
+        if not completed_attempts.exists():
+            return Response({
+                'average_score': 0,
+                'highest_score': 0,
+            })
+
+        aggregates = completed_attempts.aggregate(
+            average_score=Avg('score_percentage'),
+            highest_score=Max('score_percentage')
+        )
+
+        return Response({
+            'average_score': aggregates['average_score'] or 0,
+            'highest_score': aggregates['highest_score'] or 0,
+        })
+
+class CategoryDistributionView(APIView):
+    """Get the distribution of quizzes played across different categories."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        category_data = QuizAttempt.objects.filter(user=user, status='completed') \
+            .values('quiz__category__name') \
+            .annotate(quiz_count=Count('id')) \
+            .order_by('-quiz_count')
+
+        # Rename keys for consistency
+        data = [{'category': item['quiz__category__name'], 'quiz_count': item['quiz_count']} for item in category_data if item['quiz__category__name']]
+        
+        return Response(data)
+
+class PerformanceByCategoryView(APIView):
+    """Get average and highest scores for each quiz category."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        performance_data = QuizAttempt.objects.filter(user=user, status='completed') \
+            .values('quiz__category__name') \
+            .annotate(
+                average_score=Avg('score_percentage'),
+                highest_score=Max('score_percentage')
+            ) \
+            .order_by('quiz__category__name')
+
+        # Rename key for consistency
+        data = [
+            {
+                'category': item['quiz__category__name'],
+                'average_score': item['average_score'],
+                'highest_score': item['highest_score']
+            } for item in performance_data if item['quiz__category__name']
+        ]
+
+        return Response(data)
+
+class UserProgressView(APIView):
+    """Get user's score progression over the last 15 quizzes."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        progress_data = QuizAttempt.objects.filter(user=user, status='completed') \
+            .order_by('-completed_at')[:15] \
+            .values('quiz__title', 'score_percentage', 'completed_at')
+
+        # Reverse the data to show chronological order
+        data = sorted(progress_data, key=lambda x: x['completed_at'])
+
+        # Format the data for the chart
+        formatted_data = [
+            {
+                'quiz_name': item['quiz__title'],
+                'score': item['score_percentage'],
+                'date': item['completed_at'].strftime('%Y-%m-%d')
+            } for item in data
+        ]
+
+        return Response(formatted_data)
 
 class RecentActivityView(APIView):
     """Get recent user activity"""

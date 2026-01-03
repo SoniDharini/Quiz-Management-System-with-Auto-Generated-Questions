@@ -35,7 +35,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ isOpen, onClose, leaderboardD
           </button>
           <div className="leaderboard-title-container">
             <Trophy className="leaderboard-title-icon" />
-            <h2 className="leaderboard-title">Leaderboard <span className="text-sm font-normal opacity-70">({leaderboardData.length})</span></h2>
+            <h2 className="leaderboard-title">Leaderboard<span className="text-sm font-normal opacity-70"></span></h2>
           </div>
         </div>
 

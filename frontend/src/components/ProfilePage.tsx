@@ -26,9 +26,6 @@ import {
 } from 'lucide-react';
 import { userAPI, quizAPI, getStoredUsername } from '../services/api';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Chart as ChartJS, ArcElement, Tooltip as ChartJsTooltip, Legend as ChartJsLegend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { Pie, Bar as BarJS } from 'react-chartjs-2';
 import {
   Table,
   TableBody,
@@ -38,10 +35,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Leaderboard from './Leaderboard';
+import PerformanceDashboard from './PerformanceDashboard';
 import './Leaderboard.css';
-
-
-ChartJS.register(ArcElement, ChartJsTooltip, ChartJsLegend, CategoryScale, LinearScale, BarElement, Title, ChartDataLabels);
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -82,15 +77,10 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
   const [showStreakModal, setShowStreakModal] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [userData, setUserData] = useState<any>(null);
-  const [quizHistory, setQuizHistory] = useState<QuizAttempt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
-  // Derived state for performance charts
-  const [overallMetrics, setOverallMetrics] = useState<{ average: number, highest: number } | null>(null);
-  const [quizzesByCategoryPieData, setQuizzesByCategoryPieData] = useState<PerformanceChartData | null>(null);
-  const [categoryBarData, setCategoryBarData] = useState<PerformanceChartData | null>(null);
   const [isLeaderboardOpen, setLeaderboardOpen] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -139,9 +129,8 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
     const fetchUserData = async () => {
       try {
         setIsLoading(true);
-        const [profile, history, activity, leaderboard, allBadges, unlockedBadges] = await Promise.all([
+        const [profile, activity, leaderboard, allBadges, unlockedBadges] = await Promise.all([
           userAPI.getProfile(),
-          quizAPI.getQuizHistory().catch((err) => { console.error('Failed to fetch quiz history:', err); return []; }),
           userAPI.getRecentActivity().catch((err) => { console.error('Failed to fetch recent activity:', err); return []; }),
           userAPI.getLeaderboard().catch((err) => { console.error('Failed to fetch leaderboard:', err); return []; }),
           userAPI.getAllAchievements().catch((err) => { console.error('Failed to fetch achievements:', err); return []; }),
@@ -181,7 +170,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
           setCurrentUser(currentUserFromProfile);
         }
 
-        setQuizHistory(history);
+
         setRecentActivity(activity);
         setLeaderboardData(leaderboard);
 
@@ -232,72 +221,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
     fetchUserData();
   }, []);
 
-  // Process data for charts whenever quizHistory changes
-  useEffect(() => {
-    if (!quizHistory || quizHistory.length === 0) {
-      setOverallMetrics(null);
-      setQuizzesByCategoryPieData(null);
-      setCategoryBarData(null);
-      return;
-    }
 
-    // Calculate overall metrics
-    const totalScore = quizHistory.reduce((acc, curr) => acc + (curr.score_percentage || 0), 0);
-    const average = totalScore / quizHistory.length;
-    const highest = Math.max(...quizHistory.map(q => q.score_percentage || 0));
-
-    setOverallMetrics({ average, highest });
-
-    // Group by category
-    const categoryStats: Record<string, { count: number; totalScore: number }> = {};
-
-    quizHistory.forEach(quiz => {
-      const category = quiz.quiz_category || 'Uncategorized';
-      if (!categoryStats[category]) {
-        categoryStats[category] = { count: 0, totalScore: 0 };
-      }
-      categoryStats[category].count += 1;
-      categoryStats[category].totalScore += (quiz.score_percentage || 0);
-    });
-
-    const categories = Object.keys(categoryStats);
-    const counts = categories.map(c => categoryStats[c].count);
-    const avgScores = categories.map(c => categoryStats[c].totalScore / categoryStats[c].count);
-
-    // Set Pie Data
-    setQuizzesByCategoryPieData({
-      labels: categories,
-      datasets: [{
-        label: 'Quizzes Taken',
-        data: counts,
-        backgroundColor: [
-          '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
-          '#C9CBCF', '#4BC0C0', '#FF9F40', '#9966FF', '#FF6384', '#36A2EB'
-        ],
-        borderColor: '#ffffff',
-        borderWidth: 2
-      }]
-    });
-
-    // Set Bar Data
-    setCategoryBarData({
-      labels: categories,
-      datasets: [
-        {
-          label: 'Average Score (%)',
-          data: avgScores,
-          backgroundColor: 'rgba(54, 162, 235, 0.8)',
-          yAxisID: 'y-axis-scores'
-        },
-        {
-          label: 'Quizzes Taken',
-          data: counts,
-          backgroundColor: 'rgba(255, 206, 86, 0.8)',
-          yAxisID: 'y-axis-count'
-        }
-      ]
-    });
-  }, [quizHistory]);
 
   // Show loading state
   if (isLoading || !userData) {
@@ -803,88 +727,7 @@ export function ProfilePage({ onBack, onLogout }: ProfilePageProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            {(!quizzesByCategoryPieData && !categoryBarData) ? (
-              <div className="text-center text-[#003B73]/70 bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10 p-12">
-                <BarChart3 className="w-16 h-16 mx-auto text-[#003B73]/30 mb-4" />
-                <h3 className="text-xl font-semibold text-[#003B73] mb-2">No Performance Data Available</h3>
-                <p>It looks like you haven&apos;t completed any quizzes yet. Take a quiz to see your performance stats here!</p>
-              </div>
-            ) : (
-              <div className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10">
-                    <CardHeader>
-                      <CardTitle className="text-[#003B73] text-2xl">Quizzes Played by Category</CardTitle>
-                      <p className="text-[#003B73]/70">Distribution of quizzes completed</p>
-                    </CardHeader>
-                    <CardContent className="h-[300px] w-full flex items-center justify-center">
-                      {quizzesByCategoryPieData && (
-                        <div className="w-full max-w-xs">
-                          <Pie
-                            data={quizzesByCategoryPieData}
-                            options={{
-                              responsive: true,
-                              maintainAspectRatio: false,
-                              plugins: { legend: { position: 'top' } }
-                            }}
-                          />
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                  <Card className="flex flex-col justify-center items-center bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10 p-6">
-                    <CardTitle className="text-[#003B73]/70 mb-2 text-lg">Average Score</CardTitle>
-                    <p className="text-4xl font-bold text-[#003B73]">{overallMetrics?.average.toFixed(1)}%</p>
-                  </Card>
-                  <Card className="flex flex-col justify-center items-center bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10 p-6">
-                    <CardTitle className="text-[#003B73]/70 mb-2 text-lg">Highest Score</CardTitle>
-                    <p className="text-4xl font-bold text-[#003B73]">{overallMetrics?.highest.toFixed(1)}%</p>
-                  </Card>
-                </div>
-
-                {categoryBarData && (
-                  <Card className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-[#003B73]/10">
-                    <CardHeader>
-                      <CardTitle className="text-[#003B73] text-2xl">Performance by Category</CardTitle>
-                      <p className="text-[#003B73]/70">Summary of all completed quizzes</p>
-                    </CardHeader>
-                    <CardContent className="h-[400px] w-full">
-                      <BarJS
-                        data={categoryBarData}
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          scales: {
-                            'y-axis-scores': {
-                              type: 'linear',
-                              position: 'left',
-                              beginAtZero: true,
-                              max: 100,
-                              title: {
-                                display: true,
-                                text: 'Score (%)'
-                              }
-                            },
-                            'y-axis-count': {
-                              type: 'linear',
-                              position: 'right',
-                              beginAtZero: true,
-                              title: {
-                                display: true,
-                                text: 'Quizzes Taken'
-                              },
-                              grid: {
-                                drawOnChartArea: false, // only draw grid lines for the first Y axis
-                              },
-                            }
-                          }
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
+            <PerformanceDashboard />
           </motion.div>
         )}
 
