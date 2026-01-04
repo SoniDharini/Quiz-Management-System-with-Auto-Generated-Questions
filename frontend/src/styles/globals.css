@@ -189,3 +189,25 @@
 html {
   font-size: var(--font-size);
 }
+/* Make sure floating icons always position correctly + stay on top */
+/* Floating hero icons (Trophy / Zap) */
+.lp-float-icon {
+  position: absolute !important;
+  z-index: 30 !important;
+  pointer-events: none !important;
+}
+
+.lp-float-tr {
+  top: -1.5rem !important;
+  right: -1.5rem !important;
+  left: auto !important;
+  bottom: auto !important;
+}
+
+.lp-float-bl {
+  bottom: -1.5rem !important;
+  left: -1.5rem !important;
+  right: auto !important;
+  top: auto !important;
+}
+

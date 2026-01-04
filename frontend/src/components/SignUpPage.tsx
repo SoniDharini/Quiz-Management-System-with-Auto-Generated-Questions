@@ -4,11 +4,8 @@ import { motion } from 'motion/react';
 import { Mail, Lock, User, Brain, BookOpen, Sparkles, Eye, EyeOff, Upload } from 'lucide-react';
 import { authAPI } from '../services/api';
 
-interface SignUpPageProps {
-  onSignUp: () => void;
-}
 
-export function SignUpPage({ onSignUp }: SignUpPageProps) {
+export function SignUpPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -38,8 +35,7 @@ export function SignUpPage({ onSignUp }: SignUpPageProps) {
 
     try {
       await authAPI.register(username, email, password, confirmPassword);
-      onSignUp(); // Update auth state in App
-      navigate('/'); // Navigate to home
+      navigate('/home');
     } catch (err: any) {
       const errorMsg = err.message;
       try {

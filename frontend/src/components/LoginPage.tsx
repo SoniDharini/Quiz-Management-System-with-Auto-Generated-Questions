@@ -4,11 +4,8 @@ import { motion } from 'motion/react';
 import { Mail, Lock, Bot, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { authAPI } from '../services/api';
 
-interface LoginPageProps {
-  onLogin: () => void;
-}
 
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -23,8 +20,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
     try {
       await authAPI.login(username, password);
-      onLogin(); // Update auth state in App
-      navigate('/'); // Navigate to home
+      navigate('/home');
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {

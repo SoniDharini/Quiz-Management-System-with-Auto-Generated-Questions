@@ -25,30 +25,16 @@ import {
   Rocket,
   History,
   X,
-  Upload, // Add Upload here
+  Upload,
 } from 'lucide-react';
 import { loadQuizState, QuizState, clearQuizState } from '../lib/quizPersistence';
 import { StreakDetailsModal } from './StreakDetailsModal';
 
 interface HomePageProps {
   onLogout: () => void;
-  onNavigateToProfile: () => void;
-  onNavigateToSettings: () => void;
-  onNavigateToCreateQuiz: () => void;
-  onNavigateToFeatures: () => void;
-  onNavigateToTakeQuiz: (quizId?: number) => void;
-  onNavigateToUploadQuiz: () => void;
 }
 
-export function HomePage({
-  onLogout,
-  onNavigateToProfile,
-  onNavigateToSettings,
-  onNavigateToCreateQuiz,
-  onNavigateToFeatures,
-  onNavigateToTakeQuiz,
-  onNavigateToUploadQuiz
-}: HomePageProps) {
+export function HomePage({ onLogout }: HomePageProps) {
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -57,11 +43,9 @@ export function HomePage({
   const [xp, setXp] = useState(2450);
   const [level, setLevel] = useState(8);
   const [ongoingQuiz, setOngoingQuiz] = useState<QuizState | null>(null);
-
   const [showDismissConfirm, setShowDismissConfirm] = useState(false);
 
   useEffect(() => {
-    // Check for an ongoing quiz when the homepage loads
     const savedQuiz = loadQuizState();
     if (savedQuiz) {
       setOngoingQuiz(savedQuiz);
@@ -106,7 +90,7 @@ export function HomePage({
     if (ongoingQuiz) {
       alert('You have an ongoing quiz. Please complete it before starting a new one.');
     } else {
-      onNavigateToTakeQuiz();
+      navigate('/take-quiz');
     }
   };
 
@@ -114,7 +98,7 @@ export function HomePage({
     if (ongoingQuiz) {
       alert('You have an ongoing quiz. Please complete it before starting a new one.');
     } else {
-      onNavigateToCreateQuiz();
+      navigate('/create-quiz');
     }
   };
 
@@ -161,7 +145,6 @@ export function HomePage({
                 <span>Take Quiz</span>
               </motion.button>
 
-              {/* Streak Indicator */}
               <motion.div
                 className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-400 to-orange-600 text-white rounded-2xl shadow-lg"
                 whileHover={{ scale: 1.05 }}
@@ -200,7 +183,7 @@ export function HomePage({
                   transition={{ duration: 0.2 }}
                 >
                   <button
-                    onClick={onNavigateToProfile}
+                    onClick={() => navigate('/profile')}
                     className="w-full px-4 py-3 flex items-center gap-3 hover:bg-[#DFF4FF]/50 transition-colors text-[#003B73]"
                   >
                     <User className="w-5 h-5" />
@@ -214,7 +197,7 @@ export function HomePage({
                     <span>Streak Details</span>
                   </button>
                   <button
-                    onClick={onNavigateToSettings}
+                    onClick={() => navigate('/settings')}
                     className="w-full px-4 py-3 flex items-center gap-3 hover:bg-[#DFF4FF]/50 transition-colors text-[#003B73]"
                   >
                     <Settings className="w-5 h-5" />
@@ -235,18 +218,14 @@ export function HomePage({
         </div>
       </nav>
 
-      {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
         <>
-          {/* Backdrop */}
           <motion.div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             onClick={cancelLogout}
           />
-
-          {/* Modal */}
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
             <motion.div
               className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-[#003B73]/10"
@@ -287,18 +266,14 @@ export function HomePage({
         </>
       )}
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-12">
-        {/* Hero Section */}
         <div className="text-center mb-16 relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            {/* Animated Icons around hero */}
             <div className="relative inline-block mb-8">
-              {/* Center Robot with Brain */}
               <div className="flex items-center justify-center gap-4 mb-6">
                 <motion.div
                   className="relative"
@@ -311,7 +286,6 @@ export function HomePage({
                   <div className="w-24 h-24 bg-gradient-to-br from-[#003B73] to-[#0056A8] rounded-3xl flex items-center justify-center shadow-2xl border-4 border-white">
                     <Bot className="w-12 h-12 text-white" />
                   </div>
-                  {/* Robot eyes */}
                   <div className="absolute top-6 left-6 flex gap-2">
                     <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                     <div className="w-2 h-2 bg-white rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
@@ -339,7 +313,6 @@ export function HomePage({
                   <div className="w-24 h-24 bg-gradient-to-br from-[#B9E7FF] to-[#DFF4FF] rounded-3xl flex items-center justify-center shadow-2xl border-4 border-white">
                     <Brain className="w-12 h-12 text-[#003B73]" />
                   </div>
-                  {/* Brain pulse effect */}
                   <motion.div
                     className="absolute inset-0 bg-[#003B73]/20 rounded-3xl"
                     animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
@@ -348,7 +321,6 @@ export function HomePage({
                 </motion.div>
               </div>
 
-              {/* Floating smiley emojis */}
               <motion.div
                 className="absolute -left-20 top-0"
                 animate={{
@@ -387,8 +359,6 @@ export function HomePage({
                   <Target className="w-6 h-6 text-white" />
                 </div>
               </motion.div>
-
-              {/* Tech theme floating elements */}
               <motion.div
                 className="absolute -left-32 top-20"
                 animate={{
@@ -416,7 +386,6 @@ export function HomePage({
               Learn Smart. Test Faster. Improve Every Day.
             </h1>
 
-            {/* Importance Statement */}
             <div className="max-w-3xl mx-auto mb-6">
               <motion.div
                 className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#DFF4FF] via-white to-[#B9E7FF] rounded-full shadow-lg border-2 border-[#003B73]/10"
@@ -442,7 +411,6 @@ export function HomePage({
               Track your progress, build streaks, and unlock achievements as you master new skills.
             </p>
 
-            {/* CTA Buttons */}
             <div className="flex flex-wrap items-center justify-center gap-4 mb-12">
               <motion.button
                 className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#003B73] to-[#0056A8] text-white rounded-full shadow-lg hover:shadow-2xl transition-all"
@@ -454,7 +422,7 @@ export function HomePage({
               </motion.button>
 
               <motion.button
-                onClick={onNavigateToFeatures}
+                onClick={() => navigate('/features')}
                 className="flex items-center gap-2 px-8 py-4 bg-white border-2 border-[#003B73] text-[#003B73] rounded-full shadow-md hover:shadow-lg transition-all"
                 whileHover={{ scale: 1.08, y: -3 }}
                 whileTap={{ scale: 0.95 }}
@@ -464,7 +432,6 @@ export function HomePage({
               </motion.button>
             </div>
 
-            {/* Tech Grid Pattern */}
             <div className="relative max-w-4xl mx-auto mb-8">
               <div className="grid grid-cols-5 gap-2 opacity-20">
                 {[...Array(10)].map((_, i) => (
@@ -486,7 +453,6 @@ export function HomePage({
           </motion.div>
         </div>
 
-        {/* Recent Activities Section */}
         {ongoingQuiz && (
           <motion.div
             className="mb-16"
@@ -521,7 +487,7 @@ export function HomePage({
                 </div>
                 <div className="flex gap-2">
                   <motion.button
-                    onClick={() => onNavigateToTakeQuiz(ongoingQuiz.quizId)}
+                    onClick={() => navigate(ongoingQuiz.quizId ? `/take-quiz/${ongoingQuiz.quizId}` : '/take-quiz')}
                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-2xl shadow-lg"
                     whileHover={{ scale: 1.05 }}
                   >
@@ -542,10 +508,8 @@ export function HomePage({
           </motion.div>
         )}
 
-        {/* Dismiss Confirmation Modal */}
         {showDismissConfirm && (
           <>
-            {/* Backdrop */}
             <motion.div
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
               initial={{ opacity: 0 }}
@@ -553,7 +517,6 @@ export function HomePage({
               onClick={cancelDismiss}
             />
 
-            {/* Modal */}
             <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
               <motion.div
                 className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-[#003B73]/10"
@@ -594,13 +557,11 @@ export function HomePage({
           </>
         )}
 
-        {/* Streak Details Modal */}
         <StreakDetailsModal
           isOpen={showStreakModal}
           onClose={() => setShowStreakModal(false)}
         />
 
-        {/* Tools & Features Section */}
         <motion.div
           className="mb-16"
           initial={{ opacity: 0, y: 20 }}
@@ -622,7 +583,6 @@ export function HomePage({
           </div>
 
           <div className="grid md:grid-cols-4 gap-6">
-            {/* Tool Card 1 */}
             <motion.div
               className="p-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-[#003B73]/10 hover:shadow-xl transition-all"
               whileHover={{ y: -5, scale: 1.03 }}
@@ -639,7 +599,6 @@ export function HomePage({
               </p>
             </motion.div>
 
-            {/* Tool Card 2 */}
             <motion.div
               className="p-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-[#003B73]/10 hover:shadow-xl transition-all"
               whileHover={{ y: -5, scale: 1.03 }}
@@ -656,7 +615,6 @@ export function HomePage({
               </p>
             </motion.div>
 
-            {/* Tool Card 3 */}
             <motion.div
               className="p-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-[#003B73]/10 hover:shadow-xl transition-all"
               whileHover={{ y: -5, scale: 1.03 }}
@@ -673,7 +631,6 @@ export function HomePage({
               </p>
             </motion.div>
 
-            {/* Tool Card 4 */}
             <motion.div
               className="p-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-[#003B73]/10 hover:shadow-xl transition-all"
               whileHover={{ y: -5, scale: 1.03 }}
@@ -692,21 +649,17 @@ export function HomePage({
           </div>
         </motion.div>
 
-        {/* Main Action Cards */}
         <div className="grid md:grid-cols-2 gap-8 mb-16">
-          {/* Create Quiz Card */}
           <motion.div
-            onClick={onNavigateToCreateQuiz}
+            onClick={() => navigate('/create-quiz')}
             className="group relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 border-2 border-[#003B73]/10 shadow-xl hover:shadow-2xl transition-all cursor-pointer overflow-hidden"
             whileHover={{ y: -8, scale: 1.02 }}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            {/* Glow effect on hover */}
             <div className="absolute inset-0 bg-gradient-to-br from-[#003B73]/5 to-[#B9E7FF]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-            {/* Floating Robot Icon */}
             <motion.div
               className="absolute top-4 right-4"
               animate={{
@@ -727,7 +680,6 @@ export function HomePage({
                 transition={{ duration: 0.6 }}
               >
                 <PenSquare className="w-10 h-10 text-white" />
-                {/* Smiley face overlay */}
                 <div className="absolute top-2 left-2 flex gap-1">
                   <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
                   <div className="w-1.5 h-1.5 bg-white/60 rounded-full" />
@@ -755,7 +707,6 @@ export function HomePage({
               </div>
             </div>
 
-            {/* Decorative element */}
             <motion.div
               className="absolute -bottom-4 -right-4 w-32 h-32 bg-[#003B73]/5 rounded-full blur-2xl"
               animate={{ scale: [1, 1.2, 1] }}
@@ -763,7 +714,6 @@ export function HomePage({
             />
           </motion.div>
 
-          {/* Take Quiz Card */}
           <motion.div
             onClick={handleTakeQuizClick}
             className="group relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 border-2 border-[#003B73]/10 shadow-xl hover:shadow-2xl transition-all cursor-pointer overflow-hidden"
@@ -772,10 +722,8 @@ export function HomePage({
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            {/* Glow effect on hover */}
             <div className="absolute inset-0 bg-gradient-to-br from-[#B9E7FF]/20 to-[#003B73]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-            {/* Floating Brain Icon */}
             <motion.div
               className="absolute top-4 right-4"
               animate={{
@@ -796,7 +744,6 @@ export function HomePage({
                 transition={{ duration: 0.6 }}
               >
                 <Target className="w-10 h-10 text-[#003B73]" />
-                {/* Smiley face overlay */}
                 <div className="absolute top-2 left-2 flex gap-1">
                   <div className="w-1.5 h-1.5 bg-[#003B73]/60 rounded-full" />
                   <div className="w-1.5 h-1.5 bg-[#003B73]/60 rounded-full" />
@@ -824,7 +771,6 @@ export function HomePage({
               </div>
             </div>
 
-            {/* Decorative element */}
             <motion.div
               className="absolute -bottom-4 -right-4 w-32 h-32 bg-[#B9E7FF]/30 rounded-full blur-2xl"
               animate={{ scale: [1, 1.2, 1] }}
@@ -833,7 +779,6 @@ export function HomePage({
           </motion.div>
         </div>
 
-        {/* Progress Section */}
         <motion.div
           className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-[#003B73]/10 shadow-xl"
           initial={{ opacity: 0, y: 20 }}
@@ -843,7 +788,6 @@ export function HomePage({
           <h2 className="text-[#003B73] mb-8">Your Progress</h2>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {/* XP Card */}
             <motion.div
               className="p-6 bg-gradient-to-br from-[#DFF4FF] to-white rounded-2xl border border-[#003B73]/10"
               whileHover={{ scale: 1.05 }}
@@ -868,7 +812,6 @@ export function HomePage({
               <p className="text-[#003B73]/60 mt-2">Level {level} - 550 XP to next level</p>
             </motion.div>
 
-            {/* Streak Card */}
             <motion.div
               className="p-6 bg-gradient-to-br from-orange-50 to-white rounded-2xl border border-orange-200"
               whileHover={{ scale: 1.05 }}
@@ -888,7 +831,6 @@ export function HomePage({
               <p className="text-orange-700/60 mt-2">Longest streak: 12 days</p>
             </motion.div>
 
-            {/* Achievements Card */}
             <motion.div
               className="p-6 bg-gradient-to-br from-yellow-50 to-white rounded-2xl border border-yellow-200"
               whileHover={{ scale: 1.05 }}
@@ -921,7 +863,6 @@ export function HomePage({
         </motion.div>
       </main>
 
-      {/* Footer */}
       <footer className="mt-16 bg-gradient-to-r from-[#DFF4FF] to-[#B9E7FF] border-t border-[#003B73]/10">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex flex-wrap items-center justify-between gap-4">

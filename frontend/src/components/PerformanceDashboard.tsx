@@ -89,17 +89,28 @@ const PerformanceDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        {/* Category-Wise Quiz Distribution */}
+        {/* Overall Performance Pie Chart */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Quiz Distribution by Category</h3>
+          <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Overall Performance by Category</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie data={categoryDistribution} dataKey="quiz_count" nameKey="category" cx="50%" cy="50%" outerRadius={100} fill="#8884d8" label>
+              <Pie
+                data={categoryDistribution}
+                dataKey="quiz_count"
+                nameKey="category"
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                fill="#8884d8"
+                paddingAngle={5}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              >
                 {categoryDistribution.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip formatter={(value, name) => [`${value} quizzes`, name]} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>

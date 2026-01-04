@@ -2496,3 +2496,35 @@ html {
     opacity: .5;
   }
 }
+/* Floating hero icons (Trophy / Zap) */
+/* Floating hero icons (Trophy / Zap) */
+.lp-float-icon {
+  position: absolute !important;
+  z-index: 30 !important;
+  pointer-events: none !important;
+}
+.lp-float-tr {
+  top: -1.5rem !important;
+  left: 2rem !important;    /* ✅ inside padding area */
+  right: 100% !important;
+  bottom: auto !important;
+  transform: translateX(calc(240px + 260px)) !important;
+}
+
+
+
+/* ✅ Bottom-CENTER (matches picture 2) */
+.lp-float-bc {
+  bottom: -1.5rem !important;
+  right: 70% !important;
+  transform: translateX(calc(-50% - 70px)) !important; /* ✅ shift left by 70px */
+}
+
+
+
+/* optional: slightly tighter on small screens */
+@media (max-width: 768px) {
+  .lp-float-tr { top: -1rem !important; right: -1rem !important; }
+  .lp-float-bc { bottom: -1rem !important; }
+}
+
